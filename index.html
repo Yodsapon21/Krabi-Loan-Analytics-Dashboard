@@ -503,6 +503,24 @@ table.t tfoot tr.tot td{font-weight:700}
 
 .about .badge{white-space:nowrap}
 
+.ptab td:not(.name){white-space:nowrap}.ptab td.name{min-width:15rem}
+
+/* สรุปเพื่อตัดสินใจ */
+.dec{list-style:none;margin:0;padding:0;counter-reset:dc}
+.dec>li{counter-increment:dc;display:grid;grid-template-columns:2.2rem minmax(0,1fr);column-gap:.9rem;row-gap:.25rem;padding:.9rem 0;border-top:1px solid var(--line);align-items:start}
+.dec>li:first-child{border-top:0;padding-top:.2rem}
+.dec>li::before{content:counter(dc);grid-row:1/span 4;width:2rem;height:2rem;border-radius:50%;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-weight:700;font-size:.95rem}
+.dec>li>*{grid-column:2}
+.dec b{font-size:1.05rem;line-height:1.45}
+.dec p{margin:0;color:#26344F;font-size:.97rem}
+.dec .k,.resp .k{display:inline-block;margin-right:.45rem;font-weight:700;color:var(--blue)}
+.dh{font-size:1.1rem;margin:1.2rem 0 .6rem;padding-top:1rem;border-top:2px solid var(--line)}
+.resp{list-style:none;margin:0 0 .6rem;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem}
+.resp>li{border:1px solid var(--line);border-left:4px solid var(--rose);border-radius:12px;padding:.8rem 1rem;display:grid;gap:.3rem;align-content:start;background:#fff}
+.resp b{font-size:1rem;line-height:1.45}
+.resp p{margin:0;font-size:.95rem;color:#26344F}
+@media print{.dec>li,.resp>li{break-inside:avoid}}
+
 </style>
 </head>
 <body>
@@ -537,6 +555,7 @@ table.t tfoot tr.tot td{font-weight:700}
  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+ <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.2 1.1 2.2h5c0-1 .5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></symbol>
  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 8l4 4-4 4M20 12H9"/></symbol>
@@ -981,7 +1000,7 @@ FD.hist=function(c,values,o){o=o||{};values=values.filter(v=>v!=null&&isFinite(v
   c.innerHTML=s+'</svg>';
   return st;
 };
-FD.histLegend=()=>`<div class="legend" aria-label="เส้นอ้างอิง"><span><i class="ln" style="border-color:#D25D72"></i>ค่าเฉลี่ย</span><span><i class="ln dash" style="border-color:#17794F"></i>ค่ากลาง</span><span><i class="ln" style="border-color:#7C6BC2;border-top-style:dotted"></i>เกณฑ์สูง (P95)</span></div>`;
+FD.histLegend=()=>`<div class="legend" aria-label="เส้นอ้างอิง"><span><i class="ln" style="border-color:#D25D72"></i>ค่าเฉลี่ย</span><span><i class="ln dash" style="border-color:#17794F"></i>ค่ากลาง</span><span><i class="ln" style="border-color:#7C6BC2;border-top-style:dotted"></i>ค่าสูง (95% ไม่เกินนี้)</span></div>`;
 
 /* ---------- box plot (horizontal) ---------- */
 FD.box=function(c,groups,o){o=o||{};groups=groups.filter(g=>g.values.length>0);
@@ -995,7 +1014,7 @@ FD.box=function(c,groups,o){o=o||{};groups=groups.filter(g=>g.values.length>0);
   tickLabels(max,step).forEach(t=>{s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-xt="1" x="${X(t)}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(t):trim(t))}</text>`});
   s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · แกนเริ่มที่ 0</text>`;
   info.forEach((it,i)=>{const cy=padT+i*rowH+rowH/2,st=it.st,bh=fz(22),col=o.color||'#2F6DB5';
-    const tp=`<b>${esc(it.g.label)}</b>`+[['จำนวน',st.n+' รายการ'],['ต่ำสุด',o.fmt(st.min)],['ขอบล่างของกล่อง',o.fmt(st.q1)],['ค่ากลาง',o.fmt(st.med)],['เฉลี่ย',o.fmt(st.mean)],['Q3',o.fmt(st.q3)],['เกณฑ์สูง (P95)',o.fmt(st.p95)],['สูงสุด',o.fmt(st.max)]].map(r=>FD.tipRow(r[0],r[1])).join('');
+    const tp=`<b>${esc(it.g.label)}</b>`+[['จำนวน',st.n+' รายการ'],['ต่ำสุด',o.fmt(st.min)],['ขอบล่างของกล่อง',o.fmt(st.q1)],['ค่ากลาง',o.fmt(st.med)],['เฉลี่ย',o.fmt(st.mean)],['ขอบบนของกล่อง',o.fmt(st.q3)],['ค่าสูง (95% ไม่เกินนี้)',o.fmt(st.p95)],['สูงสุด',o.fmt(st.max)]].map(r=>FD.tipRow(r[0],r[1])).join('');
     s+=`<g tabindex="0" role="img" data-tip="${esc(tp)}" aria-label="${esc(it.g.label+': ค่ากลาง '+o.fmt(st.med)+', ขอบล่าง '+o.fmt(st.q1)+', ขอบบน '+o.fmt(st.q3)+', '+st.n+' โครงการ')}"><rect x="${padL}" y="${cy-rowH/2}" width="${W-padL}" height="${rowH}" fill="transparent"/>`;
     s+=lbl(padL-8,cy,it.g.label,labW,fz(14.5));
     if(st.n<5){it.g.values.forEach(v=>{s+=`<circle cx="${X(v)}" cy="${cy}" r="5" fill="${col}" opacity=".8" stroke="#fff"/>`});s+=`<text class="ax" x="${W-padR+6}" y="${cy+fz(4.5)}" font-size="${fz(12.5)}">n=${st.n} (น้อย)</text>`}
@@ -1008,7 +1027,7 @@ FD.box=function(c,groups,o){o=o||{};groups=groups.filter(g=>g.values.length>0);
   c.innerHTML=s+'</svg>';
   return info.map(i=>({label:i.g.label,...i.st,outliers:i.out.length}));
 };
-FD.boxLegend=()=>`<div class="legend"><span><svg width="28" height="14" aria-hidden="true"><rect x="4" y="1" width="20" height="12" fill="#2F6DB5" fill-opacity=".22" stroke="#2F6DB5" stroke-width="2" rx="2"/><line x1="14" x2="14" y1="1" y2="13" stroke="#2F6DB5" stroke-width="3"/></svg>กล่อง = ช่วงที่ครอบคลุมครึ่งกลางของโครงการ ขีดหนา = ค่ากลาง</span><span><svg width="14" height="14" aria-hidden="true"><path d="M7,1 l6,6 l-6,6 l-6,-6z" fill="#fff" stroke="#D25D72" stroke-width="2"/></svg>ค่าเฉลี่ย</span><span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4" fill="none" stroke="#2F6DB5" stroke-width="2"/></svg>ค่าที่ห่างจากกลุ่มมาก (ห่างจากกลุ่มมากกว่าปกติ)</span></div>`;
+FD.boxLegend=()=>`<div class="legend"><span><svg width="28" height="14" aria-hidden="true"><rect x="4" y="1" width="20" height="12" fill="#2F6DB5" fill-opacity=".22" stroke="#2F6DB5" stroke-width="2" rx="2"/><line x1="14" x2="14" y1="1" y2="13" stroke="#2F6DB5" stroke-width="3"/></svg>กล่อง = ครึ่งหนึ่งของโครงการที่อยู่ตรงกลาง ขีดหนา = ค่ากลาง (เรียงแล้วอยู่ตรงกลาง) เส้นที่ยื่นออก = โครงการที่เหลือ</span><span><svg width="14" height="14" aria-hidden="true"><path d="M7,1 l6,6 l-6,6 l-6,-6z" fill="#fff" stroke="#D25D72" stroke-width="2"/></svg>ค่าเฉลี่ย (ผลรวมหารจำนวนโครงการ)</span><span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4" fill="none" stroke="#2F6DB5" stroke-width="2"/></svg>โครงการที่ต่างจากส่วนใหญ่มาก</span></div>`;
 
 /* ---------- scatter + trend ---------- */
 FD.scatter=function(c,pts,o){o=o||{};pts=pts.filter(p=>p.x!=null&&p.y!=null&&isFinite(p.x)&&isFinite(p.y));
@@ -1115,7 +1134,7 @@ const ST=FD.ST={rows:[],pay:[],meta:{},reports:{},source:'empty',view:'overview'
   f:{fy:'',district:'',act:'',bucket:'',status:'',q:''},fundTotal:null,availMode:'a',
   ui:{distMetric:'disb',stackMode:'amount',gran:'m',trend:false,pSort:{k:'disb',d:-1},dSort:{k:'',d:1},page:1,pageSize:25,alts:{},csvSet:'projects',openMenu:false,wsn:false,fontSize:16,contrast:false}};
 const q=[];const queue=f=>q.push(f);
-const NAV=[['overview','ภาพรวมกองทุน','grid'],['data','ข้อมูลเงินทุนหมุนเวียน','wallet'],['projects','โครงการและสมาชิก','users'],['repay','การชำระคืนเงินกู้','trend'],['districts','ข้อมูลรายอำเภอ','pin'],['reports','รายงานและเอกสาร','file'],['about','ที่มาของตัวเลข','info'],['help','คู่มือการใช้งาน','help']];
+const NAV=[['overview','ภาพรวมกองทุน','grid'],['data','ข้อมูลเงินทุนหมุนเวียน','wallet'],['projects','โครงการและสมาชิก','users'],['repay','การชำระคืนเงินกู้','trend'],['districts','ข้อมูลรายอำเภอ','pin'],['insight','สรุปผลและข้อเสนอแนะ','bulb'],['reports','รายงานและเอกสาร','file'],['about','ที่มาของตัวเลข','info'],['help','คู่มือการใช้งาน','help']];
 const LABEL=Object.fromEntries(NAV.filter(n=>n!=='-').map(n=>[n[0],n[1]]));
 const TITLES={
  overview:['แดชบอร์ด / ภาพรวม','กองทุนพัฒนาบทบาทสตรี','ติดตามเงินกู้ การชำระคืน และโอกาสที่เติบโตไปพร้อมชุมชน'],
@@ -1124,11 +1143,12 @@ const TITLES={
  repay:['วิเคราะห์ / การชำระคืน','การชำระคืนเงินกู้','ติดตามความคืบหน้าการชำระคืน เงินกู้ที่ค้างอยู่ค้างชำระ และโครงการที่ควรติดตาม'],
  districts:['วิเคราะห์ / รายอำเภอ','ข้อมูลรายอำเภอ','เปรียบเทียบ 8 อำเภอ แล้วกดที่อำเภอเพื่อดูรายละเอียดระดับตำบลและโครงการ'],
  district:['วิเคราะห์ / รายอำเภอ','','รายละเอียดของอำเภอ เทียบกับภาพรวมทั้งจังหวัด'],
+ insight:['สรุป / ข้อเสนอแนะ','สรุปผลและข้อเสนอแนะ','ข้อมูลบอกอะไร เอาไปทำอะไรต่อ และวิธีรับมือ พร้อมผลกระทบโดยประมาณ'],
  reports:['รายงาน / ส่งออก','รายงานและเอกสาร','ส่งออกข้อมูลตามตัวกรองปัจจุบันเป็น CSV, Excel หรือ PDF'],
  settings:['ระบบ / ตั้งค่า','ตั้งค่าระบบและนำเข้าข้อมูล','นำเข้าไฟล์ข้อมูล ตรวจคุณภาพข้อมูล และปรับการแสดงผลให้อ่านง่าย'],
  about:['ช่วยเหลือ / ที่มาของตัวเลข','ที่มาของตัวเลข','ตัวเลขแต่ละตัวมาจากไหน คิดอย่างไร และควรระวังอะไรเวลาอ่าน'],
  help:['ช่วยเหลือ / คู่มือ','คู่มือการใช้งาน','วิธีอ่านแดชบอร์ด นิยามตัวชี้วัด และพจนานุกรมข้อมูล']};
-const FILTERED_VIEWS=['overview','data','projects','repay','districts','district','reports'];
+const FILTERED_VIEWS=['overview','data','projects','repay','districts','district','insight','reports'];
 
 /* ---------- data lifecycle ---------- */
 function allDistricts(rows){const set=new Set(rows.map(r=>r.district));return[...FD.DISTRICTS,...[...set].filter(d=>!FD.DISTRICTS.includes(d)).sort()]}
@@ -1235,7 +1255,7 @@ function insights(){
   return out;
 }
 const wsn=(w,s,n,scope)=>`<details class="wsn" ${ST.ui.wsn?'open':''}><summary class="sbtn">${ICON('info')}<span>อ่านคำอธิบายกราฟ</span>${ICON('chev')}</summary><dl><div><dt>ภาพนี้บอกอะไร<small>What</small></dt><dd>${w}</dd></div><div><dt>แปลว่าอะไร<small>So what</small></dt><dd>${s}</dd></div><div><dt>ควรทำอะไรต่อ<small>Now what</small></dt><dd>${n}</dd></div><p class="scope">ขอบเขต: ${esc(scope)}</p></dl></details>`;
-const statLine=(st,fmt,label)=>`<p class="stats refstats" aria-label="ค่าสถิติอ้างอิง"><span>${label?esc(label)+' ':''}จำนวน <b>${FD.f0(st.n)}</b></span><span>เฉลี่ย <b>${fmt(st.mean)}</b></span><span>ความต่างโดยทั่วไปจากค่าเฉลี่ย (SD) <b>${st.std==null?'–':fmt(st.std)}</b></span><span>ค่ากลาง (มัธยฐาน) <b>${fmt(st.med)}</b></span><span>เกณฑ์สูง (P95 = 95% ของโครงการไม่เกินค่านี้) <b>${fmt(st.p95)}</b></span><span>ต่ำสุด–สูงสุด <b>${fmt(st.min)} – ${fmt(st.max)}</b></span></p>`;
+const statLine=(st,fmt,label)=>`<p class="stats refstats" aria-label="ค่าสถิติอ้างอิง"><span>${label?esc(label)+' ':''}จำนวน <b>${FD.f0(st.n)}</b></span><span>เฉลี่ย <b>${fmt(st.mean)}</b></span><span>ปกติห่างจากค่าเฉลี่ยราว <b>${st.std==null?'–':fmt(st.std)}</b></span><span>ค่ากลาง (เรียงแล้วอยู่ตรงกลาง) <b>${fmt(st.med)}</b></span><span>ค่าสูง (95 ใน 100 โครงการไม่เกินนี้) <b>${fmt(st.p95)}</b></span><span>ต่ำสุด–สูงสุด <b>${fmt(st.min)} – ${fmt(st.max)}</b></span></p>`;
 function altTable(cap,heads,rows){const on=!!(ST.ui.alts&&ST.ui.alts[cap]);
   return`<div class="altsw"><button type="button" class="swt" role="switch" aria-checked="${on}" data-act="altsw" data-cap="${esc(cap)}"><span class="trk" aria-hidden="true"><i></i></span><span class="swl">${ICON('table')}<span>ดูเป็นตาราง</span></span></button></div><div class="alt-tbl" ${on?'':'hidden'}><div class="tscroll altscroll" tabindex="0" role="region" aria-label="ตารางตัวเลข: ${esc(cap)} (เลื่อนดูได้)"><table class="t"><caption>${esc(cap)}</caption><thead><tr>${heads.map((h,i)=>`<th scope="col"${i?' class="n"':''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="n"':''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length>8?`<p class="csub altnote">${rows.length} แถว · เลื่อนในตารางเพื่อดูทั้งหมด</p>`:''}</div>`}
 const seg=(k,opts,cur,label)=>`<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(o=>`<button type="button" data-act="ui" data-k="${k}" data-v="${o[0]}" aria-pressed="${cur===o[0]}">${esc(o[1])}</button>`).join('')}</div>`;
@@ -1299,7 +1319,7 @@ function distTable(){
     ex=wsn(`ชำระตามกำหนดสูงสุดคืออำเภอ${esc(hi.d)} ${FD.pct(hi.a.onTime)} ต่ำสุดคืออำเภอ${esc(lo.d)} ${FD.pct(lo.a.onTime)} ภาพรวม ${FD.pct(all.onTime)} ยอดที่ยังไม่ได้คืนมากสุดที่อำเภอ${esc(mo.d)} ${mb(mo.a.outst)} ล้านบาท`,
       `แท่งสีเหลืองคืออำเภอที่ชำระตามกำหนดต่ำกว่าภาพรวม ควรดูควบคู่ยอดที่ยังไม่ได้คืน เพราะอำเภอที่ร้อยละสูงแต่ยอดค้างมากก็ยังมีเงินติดอยู่มาก`,
       `เริ่มติดตามอำเภอ${esc(lo.d)} และ${esc(mo.d)} ก่อน โดยกดชื่ออำเภอเพื่อดูตำบลและโครงการที่ค้าง`,FD.h.scopeText(true))}
-  return`<div class="tscroll"><table class="t"><caption class="sr">ผลการดำเนินงานรายอำเภอ หน่วย: ล้านบาท</caption><thead><tr>${thS('d','d','อำเภอ','',s)}${thS('d','n','โครงการ','n',s)}${thS('d','disb','อนุมัติสะสม','n',s)}${thS('d','repaid','ชำระคืนสะสม','n',s)}${thS('d','outst','ยอดที่ยังไม่ได้คืน','n',s)}${thS('d','ontime','ชำระตามกำหนด','',s)}<th></th></tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div><p class="stats barlg"><span class="lgi"><i class="sw" style="background:#C98A12"></i>ต่ำกว่าภาพรวมทุกอำเภอ (${FD.pct(all.onTime)})</span><span class="lgi"><i class="sw" style="background:#6B49B5"></i>เท่ากับหรือสูงกว่าภาพรวม</span></p><p class="stats refstats">หน่วยเงิน: ล้านบาท · “ชำระตามกำหนด” = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน · แท่งสีเหลือง = ต่ำกว่าค่าของทุกอำเภอรวม (${FD.pct(all.onTime)})</p>${ex}`;
+  return`<div class="tscroll"><table class="t"><caption class="sr">ผลการดำเนินงานรายอำเภอ หน่วย: ล้านบาท</caption><thead><tr>${thS('d','d','อำเภอ','',s)}${thS('d','n','โครงการ','n',s)}${thS('d','disb','อนุมัติสะสม','n',s)}${thS('d','repaid','ชำระคืนสะสม','n',s)}${thS('d','outst','ยอดที่ยังไม่ได้คืน','n',s)}${thS('d','ontime','ชำระตามกำหนด','',s)}<th scope="col"><span class="sr">ดูรายละเอียดอำเภอ</span></th></tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div><p class="stats barlg"><span class="lgi"><i class="sw" style="background:#C98A12"></i>ต่ำกว่าภาพรวมทุกอำเภอ (${FD.pct(all.onTime)})</span><span class="lgi"><i class="sw" style="background:#6B49B5"></i>เท่ากับหรือสูงกว่าภาพรวม</span></p><p class="stats refstats">หน่วยเงิน: ล้านบาท · “ชำระตามกำหนด” = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน · แท่งสีเหลือง = ต่ำกว่าค่าของทุกอำเภอรวม (${FD.pct(all.onTime)})</p>${ex}`;
 }
 
 /* ---- district compare WSN ---- */
@@ -1318,11 +1338,11 @@ function distCompare(id){
   if(v.length>=2){const top=v[0],bot=v[v.length-1],vals=v.map(i=>i.value),mean=FD.stat.mean(vals),std=FD.stat.std(vals);
     let what,so,now;
     if(m.sum){const tot=FD.stat.sum(vals),t3=v.slice(0,3).reduce((s,i)=>s+i.value,0)/tot*100;
-      what=`อำเภอ${esc(top.label)}มี${m.t}สูงสุด ${m.fmt(top.value)} (${FD.pct(top.value/tot*100)} ของทั้งหมด) ต่ำสุดคืออำเภอ${esc(bot.label)} ${m.fmt(bot.value)} ค่าเฉลี่ยต่ออำเภอ ${m.fmt(mean)} (ความต่างโดยทั่วไปจากค่าเฉลี่ย (SD) ${m.fmt(std)}) จาก ${v.length} อำเภอที่มีข้อมูล`;
+      what=`อำเภอ${esc(top.label)}มี${m.t}สูงสุด ${m.fmt(top.value)} (${FD.pct(top.value/tot*100)} ของทั้งหมด) ต่ำสุดคืออำเภอ${esc(bot.label)} ${m.fmt(bot.value)} ค่าเฉลี่ยต่ออำเภอ ${m.fmt(mean)} (แต่ละอำเภอห่างจากค่าเฉลี่ยโดยทั่วไปราว ${m.fmt(std)}) จาก ${v.length} อำเภอที่มีข้อมูล`;
       so=`3 อำเภอแรกรวมกันคิดเป็น ${FD.pct(t3)} (ถ้ากระจายเท่ากันทุกอำเภอจะอยู่ราว ${FD.pct(300/v.length)}) อำเภอสูงสุดมากกว่าต่ำสุดประมาณ ${bot.value>0?FD.f1(top.value/bot.value)+' เท่า':'– (ต่ำสุดเป็น 0)'} ตัวเลขนี้ยังไม่ปรับตามจำนวนประชากรหรือจำนวนกลุ่มสตรีของแต่ละอำเภอ`;
       now=`ตรวจสาเหตุของความต่าง เช่น จำนวนกลุ่มที่ยื่นขอ เกณฑ์การอนุมัติ หรือความต้องการจริง ก่อนตัดสินใจจัดสรรเพิ่มหรือประชาสัมพันธ์ในอำเภอ${esc(bot.label)} กดที่แท่งเพื่อดูรายละเอียดรายอำเภอ`}
     else{const below=v.filter(i=>i.value<all.onTime);
-      what=`ชำระตามกำหนดต่ำสุดคืออำเภอ${esc(bot.label)} ${FD.pct(bot.value)} สูงสุดคืออำเภอ${esc(top.label)} ${FD.pct(top.value)} ค่ารวมทุกอำเภอ ${FD.pct(all.onTime)} เฉลี่ยรายอำเภอ ${FD.pct(mean)} (ความต่างโดยทั่วไปจากค่าเฉลี่ย (SD) ${FD.f1(std)} จุดร้อยละ)`;
+      what=`ชำระตามกำหนดต่ำสุดคืออำเภอ${esc(bot.label)} ${FD.pct(bot.value)} สูงสุดคืออำเภอ${esc(top.label)} ${FD.pct(top.value)} ค่ารวมทุกอำเภอ ${FD.pct(all.onTime)} เฉลี่ยรายอำเภอ ${FD.pct(mean)} (แต่ละอำเภอห่างจากค่าเฉลี่ยโดยทั่วไปราว ${FD.f1(std)} จุดร้อยละ)`;
       so=`${below.length} จาก ${v.length} อำเภอต่ำกว่าค่ารวมทั้งจังหวัด ความต่างสูงสุด-ต่ำสุด ${FD.f1(top.value-bot.value)} จุดร้อยละ อำเภอที่มีจำนวนโครงการน้อยจะมีตัวเลขแกว่งง่าย ควรดูจำนวนโครงการประกอบ`;
       now=`เริ่มติดตามจากอำเภอที่ต่ำกว่าค่ารวมก่อน โดยเปิดหน้ารายละเอียดอำเภอเพื่อดูตำบลและโครงการที่ค้างชำระ`}
     txt=wsn(what,so,now,FD.h.scopeText(true))}
@@ -1363,7 +1383,7 @@ function statusCard(){
   const w=wsn(`ณ ${esc(ST.meta.asOf||'วันที่ข้อมูล')} จาก ${FD.f0(tot)} โครงการ: ${by.map(x=>x.b.label+' '+FD.f0(x.n)).join(' · ')}`,
     `โครงการที่ผิดนัด ไกล่เกลี่ย หรือฟ้อง รวม ${FD.f0(bn)} โครงการ (${FD.pct(tot?bn/tot*100:0)}) ยอดที่ยังไม่ได้คืน ${M(bo)} คิดเป็น ${FD.pct(A.outst>0?bo/A.outst*100:0)} ของยอดที่ยังไม่ได้คืนทั้งหมด${g('sue').n?` โดยกลุ่มดำเนินการฟ้อง ${FD.f0(g('sue').n)} โครงการ ค้าง ${M(g('sue').out)} เป็นกลุ่มที่สิ้นสุดสัญญานานเกิน 2 ปีแล้ว`:''}`,
     `เริ่มจากกลุ่มดำเนินการฟ้องและไกล่เกลี่ยก่อน เพราะค้างนานที่สุด ดูรายชื่อที่หน้า ${FD.h.link('repay','การชำระคืนเงินกู้')} หรือเลือกตัวกรอง “สถานะโครงการ”`,FD.h.scopeText());
-  return card('st','สถานะโครงการ','สัดส่วน','นับตามนิยามของกองทุน ณ '+esc(ST.meta.asOf||''),'',`<div class="chart" id="c-st"></div><p class="stats">ผิดนัดชำระ = สิ้นสุดสัญญาไม่เกิน 1 ปี · ไกล่เกลี่ย = 1–2 ปี · ดำเนินการฟ้อง = เกิน 2 ปี (ทั้งสามกลุ่มต้องค้างเกิน 5% ของเงินต้น) · ค้างไม่เกิน 5% = สิ้นสุดสัญญาแล้วแต่ค้างน้อย</p>${w}`)}
+  return card('st','สถานะโครงการ','สัดส่วน','นับตามนิยามของกองทุน ณ '+esc(ST.meta.asOf||''),'',`<div class="chart" id="c-st"></div><p class="stats">ผิดนัดชำระ = สิ้นสุดสัญญาไม่เกิน 1 ปี · ไกล่เกลี่ย = 1–2 ปี · ดำเนินการฟ้อง = เกิน 2 ปี (ทั้งสามกลุ่มต้องค้างเกิน 5% ของเงินต้น) · ค้างไม่เกิน 5% = สิ้นสุดสัญญาแล้วแต่ค้างน้อย</p>${w}`+altTable('สถานะโครงการ',['สถานะ','โครงการ','ร้อยละ','ยอดที่ยังไม่ได้คืน (บาท)'],by.map(x=>[x.b.label,FD.f0(x.n),FD.pct(x.n/tot*100),FD.f0(x.out)]).concat([['รวม',FD.f0(tot),'100.0%',FD.f0(by.reduce((t,x)=>t+x.out,0))]])))}
 function termData(R){const rr=R.filter(r=>r.date&&r.end),c=TB_.map(()=>0);rr.forEach(r=>c[termBucket(r)]++);return{rr,c,over:rr.filter(r=>r.termOver)}}
 function termCard(){
   const R=ST.sel,{rr,c,over}=termData(R);
@@ -1372,11 +1392,62 @@ function termCard(){
   queue(()=>FD.hbar($('#c-tm'),TB_.map((t,i)=>({label:t[0],value:c[i],color:i<2?'#2F6DB5':'#C2410C',valText:FD.f0(c[i])+' · '+FD.pct(c[i]/n*100),
     tip:`<b>${t[0]}</b>`+FD.tipRow('จำนวนสัญญา',FD.f0(c[i]))+FD.tipRow('สัดส่วน',FD.pct(c[i]/n*100))})),{axTitle:'จำนวนสัญญา (ค่าท้ายแท่ง: สัญญา · ร้อยละ)',aria:'จำนวนสัญญาแยกตามระยะสัญญา'}));
   const long=over.slice().sort((a,b)=>b.termY-a.termY)[0],pc=over.length/n*100;
-  const w=wsn(`จาก ${FD.f0(n)} สัญญา ระยะสัญญาเฉลี่ย ${FD.f1(sm.mean)} ปี ค่ากลาง ${FD.f1(sm.med)} ปี (ส่วนเบี่ยงเบนมาตรฐาน ${FD.f1(sm.std||0)}, P95 ${FD.f1(sm.p95)} ปี) เกิน 2 ปี ${FD.f0(over.length)} สัญญา (${FD.pct(pc)})${long?` ยาวที่สุด ${FD.f1(long.termY)} ปี (${esc(long.group)} อ.${esc(long.district)})`:''}`,
+  const w=wsn(`จาก ${FD.f0(n)} สัญญา ระยะสัญญาเฉลี่ย ${FD.f1(sm.mean)} ปี ค่ากลาง ${FD.f1(sm.med)} ปี (ปกติห่างจากค่าเฉลี่ยราว ${FD.f1(sm.std||0)} ปี โดย 95% ของสัญญาไม่เกิน ${FD.f1(sm.p95)} ปี) เกิน 2 ปี ${FD.f0(over.length)} สัญญา (${FD.pct(pc)})${long?` ยาวที่สุด ${FD.f1(long.termY)} ปี (${esc(long.group)} อ.${esc(long.district)})`:''}`,
     `กติกากำหนดผ่อนชำระไม่เกิน 2 ปี แต่ข้อมูลมีสัญญาจำนวนมากที่ระยะเกินกว่านั้น อาจเกิดจากการขยายเวลา การปรับสัญญาใหม่ หรือบันทึกวันสิ้นสุดไม่ตรงกับสัญญาเดิม ซึ่งจากข้อมูลนี้แยกไม่ได้ จึงแสดงตามที่บันทึกไว้ ไม่แก้ตัวเลข`,
     `ตรวจเอกสารสัญญาของกลุ่มที่เกิน 2 ปีโดยเฉพาะกลุ่มที่เกิน 5 ปี (${FD.f0(over.filter(r=>r.termY>5).length)} สัญญา) ว่ามีมติขยายเวลาหรือไม่ ก่อนนับเป็นผิดนัดตามนิยามสถานะ`,FD.h.scopeText());
-  return card('tm','ระยะสัญญาเทียบกติกา “ไม่เกิน 2 ปี”','กระจาย',`เกิน 2 ปี <b>${FD.f0(over.length)}</b> จาก ${FD.f0(n)} สัญญา (${FD.pct(pc)})`,'',`<p class="warnline"><b>${FD.f0(over.length)}</b> จาก ${FD.f0(n)} สัญญา (${FD.pct(pc)}) มีระยะสัญญาเกิน 2 ปี ตามที่บันทึกในข้อมูล</p><div class="legend"><span><i style="background:#2F6DB5"></i>ตามกติกา (ไม่เกิน 2 ปี)</span><span><i style="background:#C2410C"></i>เกินกติกา</span></div><div class="chart" id="c-tm"></div>${w}`)}
+  return card('tm','ระยะสัญญาเทียบกติกา “ไม่เกิน 2 ปี”','กระจาย',`เกิน 2 ปี <b>${FD.f0(over.length)}</b> จาก ${FD.f0(n)} สัญญา (${FD.pct(pc)})`,'',`<p class="warnline"><b>${FD.f0(over.length)}</b> จาก ${FD.f0(n)} สัญญา (${FD.pct(pc)}) มีระยะสัญญาเกิน 2 ปี ตามที่บันทึกในข้อมูล</p><div class="legend"><span><i style="background:#2F6DB5"></i>ตามกติกา (ไม่เกิน 2 ปี)</span><span><i style="background:#C2410C"></i>เกินกติกา</span></div><div class="chart" id="c-tm"></div>${w}`+altTable('ระยะสัญญา',['ระยะสัญญา','สัญญา','ร้อยละ','เทียบกติกา'],TB_.map((t,i)=>[t[0],FD.f0(c[i]),FD.pct(c[i]/n*100),i<2?'ตามกติกา':'เกินกติกา']).concat([['รวม',FD.f0(n),'100.0%','เกิน 2 ปี '+FD.f0(over.length)]])))}
 FD.h.termData=termData;FD.h.statusCard=statusCard;FD.h.termCard=termCard;
+/* ---- สรุปเพื่อตัดสินใจ (Business/Decision Insight): ข้อมูลบอกอะไร -> เอาไปทำอะไรต่อ -> วิธีรับมือ & ผลกระทบ ---- */
+function decisionData(){
+  const rows=ST.sel,A=ST.agg,P=FD.pct,sum=(rs,k)=>rs.reduce((s,r)=>s+(r[k]||0),0),items=[],resp=[];
+  const addD=(iso,n)=>new Date(Date.parse(iso+'T00:00:00Z')+n*864e5).toISOString().slice(0,10);
+  /* 1 หนี้เลยกำหนด (ตามสถานะโครงการ) */
+  const sue=rows.filter(r=>r.status==='sue'),med=rows.filter(r=>r.status==='mediate'),def=rows.filter(r=>r.status==='default'),bad=[...sue,...med,...def],badOut=sum(bad,'outst');
+  if(bad.length){
+    const parts=[['ดำเนินการฟ้อง',sue],['ไกล่เกลี่ย',med],['ผิดนัดชำระ',def]].filter(x=>x[1].length).map(x=>`${x[0]} ${FD.f0(x[1].length)} สัญญา (${M(sum(x[1],'outst'))})`).join(', ');
+    items.push({t:'ตามหนี้ที่เลยกำหนดก่อน',f:`${FD.f0(bad.length)} สัญญาเลยกำหนดแล้วยังค้าง รวม ${M(badOut)}${A.outst>0?` (${P(badOut/A.outst*100)} ของยอดคงเหลือ)`:''} แบ่งเป็น ${parts}`,u:'เปิดรายชื่อสัญญา เรียงตามสถานะและยอดค้าง แล้วส่งออก Excel ให้ผู้ติดตาม',link:['repay','ดูรายชื่อสัญญา']});
+    resp.push({t:`หนี้เลยกำหนด ${M(badOut)}`,m:'ติดตามเรียงตามยอดและระยะที่ค้าง เสนอปรับงวดชำระให้ผู้กู้ที่ยังมีรายได้',i:`ถ้าเก็บคืนได้ครึ่งหนึ่ง (สมมติ) จะมีเงิน ${M(badOut/2)} กลับกองทุนไปปล่อยกู้ต่อ ถ้าไม่ทำ ดอกเบี้ยผิดนัด 3% ต่อปีตามกติกา จะเพิ่มภาระผู้กู้ราว ${M(badOut*0.03)} ต่อปี`});
+  }else items.push({t:'ไม่มีหนี้เลยกำหนดในขอบเขตนี้',f:'ไม่พบสัญญาที่อยู่ในสถานะผิดนัดชำระ ไกล่เกลี่ย หรือดำเนินการฟ้อง',u:'รักษาการแจ้งเตือนก่อนครบงวดไว้',link:['repay','ดูการชำระคืน']});
+  /* 2 อำเภอ */
+  const ds=byDistrict(ST.selND).filter(x=>x.rows.length&&x.a.onTime!=null),d5=ds.filter(x=>x.rows.length>=5),dd=d5.length>=2?d5:ds;
+  if(dd.length>=2){
+    const lo=dd.reduce((a,b)=>b.a.onTime<a.a.onTime?b:a),hi=dd.reduce((a,b)=>b.a.onTime>a.a.onTime?b:a),gap=hi.a.onTime-lo.a.onTime,prov=FD.agg(ST.selND).onTime;
+    if(gap>=5){
+      items.push({t:`เพิ่มแรงติดตามที่อำเภอ${lo.d}`,f:`อำเภอ${lo.d}ชำระตามกำหนด ${P(lo.a.onTime)} ต่ำสุดในจังหวัด สูงสุดคืออำเภอ${hi.d} ${P(hi.a.onTime)} ยอดคงเหลือของอำเภอ${lo.d} ${M(lo.a.outst)}${lo.rows.length<5?` (มีเพียง ${lo.rows.length} โครงการ ควรดูรายสัญญาประกอบ)`:''}`,u:`ใช้ตารางเทียบอำเภอจัดลำดับการลงพื้นที่ และถอดบทเรียนจากอำเภอ${hi.d}`,link:['districts','เทียบทุกอำเภอ']});
+      const gain=prov!=null?(prov-lo.a.onTime)/100*lo.a.outst:0;
+      resp.push({t:`อำเภอ${lo.d} ชำระตรงเวลาต่ำ`,m:'ลงพื้นที่และโทรเตือนก่อนครบงวด',i:gain>0?`ถ้าขึ้นถึงค่าเฉลี่ยจังหวัด (${P(prov)}) ยอดที่ชำระตามกำหนดเพิ่มราว ${M(gain)}`:`ยอดคงเหลือ ${M(lo.a.outst)} มีโอกาสค้างต่อถ้าไม่ติดตาม`});
+    }else if(hi.a.onTime>=5)items.push({t:'ทุกอำเภอชำระใกล้เคียงกัน',f:`ชำระตามกำหนดอยู่ที่ ${P(lo.a.onTime)}–${P(hi.a.onTime)} ห่างกัน ${FD.f1(gap)} จุดร้อยละ`,u:'ใช้มาตรการติดตามแบบเดียวกันทั้งจังหวัดได้',link:['districts','เทียบทุกอำเภอ']});
+  }
+  /* 3 กิจกรรมเสี่ยง */
+  const gs=groupBy(ST.sel,'act').filter(g=>g.a.outst>0&&g.rows.length>=10).map(g=>({...g,r:g.a.ov/g.a.outst*100}));
+  if(gs.length>=2){const hi=gs.reduce((a,b)=>b.r>a.r?b:a),lo=gs.reduce((a,b)=>b.r<a.r?b:a);
+    if(hi.r-lo.r>=3)items.push({t:'คัดกรองกิจกรรมก่อนอนุมัติรอบใหม่',f:`กิจกรรม “${hi.k}” ค้างสูงสุด ${P(hi.r)} ของยอดคงเหลือ (${FD.f0(hi.rows.length)} โครงการ) ส่วน “${lo.k}” ต่ำสุด ${P(lo.r)}`,u:'ใช้เป็นเกณฑ์คัดกรอง เช่น ขอแผนรายได้เพิ่มสำหรับกิจกรรมที่ค้างสูง (ควรตรวจสาเหตุประกอบ)',link:['repay','ดูตามกิจกรรม']});}
+  /* 4 ระยะสัญญา + กติกา */
+  const tr=rows.filter(r=>r.date&&r.end),ov=tr.filter(r=>r.termOver);
+  if(tr.length){
+    if(ov.length){const mx=Math.max(...tr.map(r=>r.termY)),drs=[...new Set(rows.map(r=>r.dr).filter(v=>v!=null&&isFinite(v)&&v!==3))];
+      items.push({t:'ตรวจสัญญาที่เกินกติกา',f:`${FD.f0(ov.length)} จาก ${FD.f0(tr.length)} สัญญา (${P(ov.length/tr.length*100)}) ผ่อนนานเกิน 2 ปี สูงสุด ${FD.f1(mx)} ปี${drs.length?` และดอกเบี้ยผิดนัดในไฟล์ ${drs.map(v=>FD.f1(v)+'%').join(', ')} ต่างจากกติกา 3% ต่อปี`:''}`,u:'ตรวจว่าเป็นการขยายเวลาที่อนุมัติแล้วหรือบันทึกวันสิ้นสุดผิด แล้วตั้งเพดาน 2 ปีในแบบอนุมัติใหม่',link:['overview','ดูกราฟระยะสัญญา','tm-h']});
+      resp.push({t:`สัญญาเกิน 2 ปี ${FD.f0(ov.length)} สัญญา`,m:'ตั้งเพดาน 2 ปีในการอนุมัติใหม่ และตรวจสัญญาเดิมทีละฉบับ',i:'ถ้าไม่แก้ จะเทียบสถานะหนี้กับกติกาไม่ได้ รายงานอาจไม่ตรงความจริง'});
+    }else items.push({t:'ระยะสัญญาอยู่ในกติกา',f:`ทุกสัญญา (${FD.f0(tr.length)}) ผ่อนไม่เกิน 2 ปีตามกติกา`,u:'คงเกณฑ์เดิมในการอนุมัติ',link:['overview','ดูกราฟระยะสัญญา','tm-h']});
+  }
+  /* สัญญาใกล้ครบกำหนด (ใช้ในตารางรับมือ) */
+  const lim=addD(FD.ASOF_ISO,90),soon=rows.filter(r=>r.status==='active'&&r.end&&r.end<=lim&&r.outst>0);
+  if(soon.length)resp.splice(Math.min(2,resp.length),0,{t:`ใกล้ครบกำหนดใน 90 วัน ${FD.f0(soon.length)} สัญญา`,m:'แจ้งเตือนผู้กู้ก่อนครบกำหนดประมาณ 30 วัน',i:`ยอดคงเหลือ ${M(sum(soon,'outst'))} (ถึง ${FD.dthai(lim)}) ถ้าเตือนทัน จะไม่กลายเป็นหนี้ผิดนัดเพิ่ม`});
+  return{items,resp:resp.slice(0,4)};
+}
+function decisionCards(){
+  const D=decisionData();
+  const li=D.items.map(i=>`<li><b>${esc(i.t)}</b><p><span class="k">ข้อมูลบอกว่า</span> ${esc(i.f)}</p><p><span class="k">เอาไปทำต่อ</span> ${esc(i.u)}</p><a class="lnkbtn" href="#/${i.link[0]}"${i.link[0]==='overview'?' data-scroll="'+(i.link[2]||'tr-h')+'"':''}>${esc(i.link[1])}</a></li>`).join('');
+  const c1=card('dec','ข้อสรุป และเอาข้อมูลไปทำอะไรต่อ','Insight',`เรียงตามความสำคัญ · ${esc(FD.h.scopeText(true))}`,'',`<ol class="dec" role="list">${li}</ol>`);
+  const c2=D.resp.length?card('rs','วิธีรับมือ & ผลกระทบ','ประมาณการ','ตัวเลขผลกระทบประมาณจากข้อมูลที่เลือก ไม่ใช่ผลที่รับรองได้','',`<ul class="resp" role="list">${D.resp.map(x=>`<li><b>${esc(x.t)}</b><p><span class="k">วิธีรับมือ</span> ${esc(x.m)}</p><p><span class="k">ผลกระทบ</span> ${esc(x.i)}</p></li>`).join('')}</ul>`):'';
+  return c1+c2;
+}
+V.insight=function(){
+  if(!ST.rows.length)return nodataCard();
+  if(!hasData())return nodataCard('ไม่พบโครงการตามตัวกรอง');
+  return decisionCards();
+};
+FD.h.decisionData=decisionData;
 V.overview=function(){
   if(!ST.rows.length)return hero()+kpis()+nodataCard();
   const A=ST.agg;if(!hasData())return hero()+kpis()+nodataCard('ไม่พบโครงการตามตัวกรอง');
@@ -1386,13 +1457,15 @@ V.overview=function(){
   /* trend */
   const unitN=GRAN[g].n;let tw='';
   if(n){const sd=FD.stat.summary(S.disb),tD=FD.stat.sum(S.disb),tP=FD.stat.sum(S.pay),l=n-1;
-    const what=`ช่วง ${S.labels[0]}–${S.labels[l]} (${GRAN[g].t}) วงเงินสัญญารวม ${M(tD)}${S.hasPay?` ชำระคืนรวม ${M(tP)}`:''} ${unitN}ล่าสุด (${S.labels[l]}) วงเงินสัญญา ${M(S.disb[l])}${S.hasPay?` ชำระคืน ${M(S.pay[l])}`:''} เฉลี่ยต่อ${unitN}: วงเงินสัญญา ${M(sd.mean)} (ความต่างจากค่าเฉลี่ยโดยทั่วไป SD ${sd.std==null?'–':M(sd.std)}, เกณฑ์สูง (P95) ${M(sd.p95)})`;
+    const what=`ช่วง ${S.labels[0]}–${S.labels[l]} (${GRAN[g].t}) วงเงินสัญญารวม ${M(tD)}${S.hasPay?` ชำระคืนรวม ${M(tP)}`:''} ${unitN}ล่าสุด (${S.labels[l]}) วงเงินสัญญา ${M(S.disb[l])}${S.hasPay?` ชำระคืน ${M(S.pay[l])}`:''} เฉลี่ยต่อ${unitN}: วงเงินสัญญา ${M(sd.mean)} (ปกติห่างจากค่าเฉลี่ยราว ${sd.std==null?'–':M(sd.std)} และ 95% ของช่วงไม่เกิน ${M(sd.p95)})`;
     const so=(n>=2&&sd.mean>0?`${unitN}ล่าสุดมีวงเงินสัญญา${S.disb[l]>=sd.mean?'สูงกว่า':'ต่ำกว่า'}ค่าเฉลี่ย ${FD.pct(Math.abs(S.disb[l]-sd.mean)/sd.mean*100)}. `:'')+(S.hasPay?(tD>0?`ตลอดช่วงนี้ชำระคืนคิดเป็น ${FD.pct(tP/tD*100)} ของวงเงินอนุมัติ ซึ่ง${tP<tD?'เงินไหลกลับน้อยกว่าเงินที่จ่ายออก':'เงินไหลกลับมากกว่าเงินที่จ่ายออก'} (ชำระคืนรวมถึงโครงการที่อนุมัติในช่วงก่อนหน้า)`:''):'ยังไม่มีรายการชำระคืนรายครั้ง จึงแสดงเฉพาะเส้นอนุมัติ (ข้อมูลต้นทางมีเฉพาะวันที่รับชำระล่าสุด ไม่มียอดชำระรายครั้ง)');
     const now=(TB.rd?`ถ้าแนวโน้มเส้นตรงจาก ${n} ${unitN}ยังเป็นเช่นเดิม ${TB.next} จะมีวงเงินสัญญาประมาณ ${M(TB.fc[0])}${TB.fc[1]!=null?` ชำระคืนประมาณ ${M(TB.fc[1])}`:''} เป็นการประมาณเบื้องต้น ไม่ใช่ค่ายืนยัน ใช้วางแผนวงเงินพร้อมสนับสนุนและเทียบกับตัวเลขจริงเมื่อมีข้อมูลใหม่ (เปิด “แสดงเส้นแนวโน้มและคาดการณ์” เพื่อดูเส้นประ)`:`ต้องมีข้อมูลอย่างน้อย 4 ${unitN} จึงจะคาดการณ์ได้ ตอนนี้มี ${n}`)+(S.noDate?` · มี ${S.noDate} โครงการที่ไม่มีวันที่เริ่มสัญญา จึงไม่นับในกราฟนี้`:'')+(S.cut?` · แสดง ${n} ${unitN}ล่าสุด จากทั้งหมด ${n+S.cut}`:'');
     tw=wsn(what,so,now,FD.h.scopeText());}
   queue(()=>FD.line($('#c-trend'),{labels:S.labels,series:[{name:'วงเงินสัญญา',color:'#2F6DB5',values:S.disb,trend:TB.rd},{name:'ชำระคืน',color:'#7C6BC2',values:S.hasPay?S.pay:null,trend:TB.rp}],div:1e6,unit:'ล้านบาท',yTitle:'ล้านบาท',showTrend:ST.ui.trend,forecast:ST.ui.trend&&TB.rd?TB.fc:null,nextLabel:TB.next,aria:'แนวโน้มการอนุมัติและชำระคืน '+GRAN[g].t,nodata:'ไม่มีวันที่เริ่มสัญญาในข้อมูล จึงวาดกราฟตามช่วงเวลาไม่ได้ (ลองเลือก “รายปีงบประมาณ”)'}));
+  const zeroLbl=g==='y'?S.labels.filter((_,i)=>S.disb[i]===0&&(S.cnt?S.cnt[i]===0:true)):[];
+  const trendNote=(S.cut>0||zeroLbl.length||S.noDate)?`<p class="stats">${[S.cut>0?`แสดง ${n} ${unitN}ล่าสุด (ไม่แสดงอีก ${FD.f0(S.cut)} ${unitN}ก่อนหน้า) ดูครบทุกช่วงที่แท็บ “รายไตรมาส” หรือ “รายปีงบ”`:'',zeroLbl.length?`ปีงบประมาณที่ไม่มีสัญญาในไฟล์: ${zeroLbl.join(', ')}`:'',S.noDate?`ไม่นับ ${FD.f0(S.noDate)} สัญญาที่ไม่มีวันที่`:''].filter(Boolean).join(' · ')}</p>`:'';
   const trendCard=card('tr',(S.hasPay?'แนวโน้มวงเงินสัญญาและชำระคืน':'แนวโน้มวงเงินตามวันเริ่มสัญญา'),'ตามช่วงเวลา',`${esc(GRAN[g].t)} · หน่วย: ล้านบาท · ${g==='y'?'นับตามปีงบประมาณที่ระบุในไฟล์':'นับตามวันเริ่มต้นสัญญา (ไม่ใช่ปีงบประมาณที่อนุมัติ)'}`,seg('gran',[['m','รายเดือน'],['q','รายไตรมาส'],['y','รายปีงบ']],g,'เลือกช่วงเวลา')+`<label class="chk"><input type="checkbox" data-act="uichk" data-k="trend" ${ST.ui.trend?'checked':''}> แสดงเส้นแนวโน้มและคาดการณ์</label>`,
-    `<div class="legend"><span><i class="ln" style="border-color:#2F6DB5"></i>วงเงินสัญญา</span>${S.hasPay?'<span><i class="ln" style="border-color:#7C6BC2"></i>ชำระคืน</span>':''}${ST.ui.trend?'<span><i class="ln dash" style="border-color:#4A5873"></i>แนวโน้ม / ○ คาดการณ์</span>':''}</div><div class="chart" id="c-trend" role="region" aria-label="กราฟแนวโน้ม"></div>${tw}`+(n?altTable('ตัวเลขรายช่วง (บาท)',['ช่วง','วงเงินสัญญา',...(S.hasPay?['ชำระคืน']:[])],S.labels.map((l,i)=>[l,FD.f0(S.disb[i]),...(S.hasPay?[FD.f0(S.pay[i])]:[])])):''));
+    `<div class="legend"><span><i class="ln" style="border-color:#2F6DB5"></i>วงเงินสัญญา</span>${S.hasPay?'<span><i class="ln" style="border-color:#7C6BC2"></i>ชำระคืน</span>':''}${ST.ui.trend?'<span><i class="ln dash" style="border-color:#4A5873"></i>แนวโน้ม / ○ คาดการณ์</span>':''}</div><div class="chart" id="c-trend" role="region" aria-label="กราฟแนวโน้ม"></div>${trendNote}${tw}`+(n?altTable('ตัวเลขรายช่วง (บาท)',['ช่วง','วงเงินสัญญา',...(S.hasPay?['ชำระคืน']:[])],S.labels.map((l,i)=>[l,FD.f0(S.disb[i]),...(S.hasPay?[FD.f0(S.pay[i])]:[])])):''));
   /* donut */
   queue(()=>FD.donut($('#c-donut'),FD.BUCKETS.map(b=>({label:b.label,color:b.color,hatch:b.key==='b2',value:A.b[b.key],text:M(A.b[b.key])})),{center:FD.pct(A.onTime),centerSub:'ชำระตามกำหนด',aria:'สัดส่วนยอดที่ยังไม่ได้คืนแยกตามสถานะ'}));
   const pc=k=>A.outst>0?A.b[k]/A.outst*100:null;
@@ -1415,15 +1488,15 @@ function distStatsCard(){
   const ds=byDistrict(ST.selND).filter(x=>x.rows.length),R=distStatRows(ds),all=R[R.length-1],body=R.slice(0,-1);
   const row=(x,tf)=>`<tr${tf?' class="tot"':''}><td class="name">${esc(x.label)}</td><td class="n">${FD.f0(x.n)}</td><td class="n">${sf0(x.s&&x.s.mean)}</td><td class="n">${sf0(x.s&&x.s.med)}</td><td class="n">${sf0(x.s&&x.s.std)}</td><td class="n">${sf0(x.s&&x.s.min)}</td><td class="n">${sf0(x.s&&x.s.max)}</td><td class="n">${x.mem==null?'–':FD.f1(x.mem)}</td><td class="n">${x.rate==null?'–':FD.pct(x.rate)}</td></tr>`;
   const th=(t,u)=>`<th class="n">${t}${u?`<span class="u">${u}</span>`:''}</th>`;
-  const tbl=`<div class="tscroll" tabindex="0" role="region" aria-label="สถิติเชิงพรรณารายอำเภอ (เลื่อนซ้ายขวาได้)"><table class="t"><caption class="sr">สถิติเชิงพรรณาของวงเงินอนุมัติต่อโครงการ แยกรายอำเภอ หน่วย: บาท</caption><thead><tr><th>อำเภอ</th>${th('โครงการ','แห่ง')}${th('วงเงินเฉลี่ย','บาท')}${th('ค่ากลาง','บาท')}${th('ส่วนเบี่ยงเบนมาตรฐาน','บาท')}${th('ต่ำสุด','บาท')}${th('สูงสุด','บาท')}${th('สมาชิกเฉลี่ย','คน/โครงการ')}${th('ชำระคืนเฉลี่ย','% ต่อโครงการ')}</tr></thead><tbody>${body.map(x=>row(x)).join('')}</tbody><tfoot>${row(all,1)}</tfoot></table></div>`;
+  const tbl=`<div class="tscroll" tabindex="0" role="region" aria-label="สถิติเชิงพรรณารายอำเภอ (เลื่อนซ้ายขวาได้)"><table class="t"><caption class="sr">สถิติเชิงพรรณาของวงเงินอนุมัติต่อโครงการ แยกรายอำเภอ หน่วย: บาท</caption><thead><tr><th>อำเภอ</th>${th('โครงการ','แห่ง')}${th('วงเงินเฉลี่ย','บาท')}${th('ค่ากลาง','บาท')}${th('ห่างจากค่าเฉลี่ยโดยทั่วไป','บาท')}${th('ต่ำสุด','บาท')}${th('สูงสุด','บาท')}${th('สมาชิกเฉลี่ย','คน/โครงการ')}${th('ชำระคืนเฉลี่ย','% ต่อโครงการ')}</tr></thead><tbody>${body.map(x=>row(x)).join('')}</tbody><tfoot>${row(all,1)}</tfoot></table></div>`;
   const ok=body.filter(x=>x.s&&x.n>=2);let ex;
   if(ok.length>=2&&all.s){const hi=ok.reduce((a,b)=>b.s.mean>a.s.mean?b:a),lo=ok.reduce((a,b)=>b.s.mean<a.s.mean?b:a),sd=ok.reduce((a,b)=>(b.s.std||0)>(a.s.std||0)?b:a),g=all.s;
     const skew=g.mean<g.med*.95?'ค่าเฉลี่ยต่ำกว่าค่ากลาง แปลว่ามีโครงการวงเงินน้อยบางส่วนดึงค่าเฉลี่ยลง':g.mean>g.med*1.05?'ค่าเฉลี่ยสูงกว่าค่ากลาง แปลว่ามีโครงการวงเงินสูงบางส่วนดึงค่าเฉลี่ยขึ้น':'ค่าเฉลี่ยใกล้เคียงค่ากลาง แปลว่าวงเงินต่อโครงการค่อนข้างสม่ำเสมอ';
-    ex=wsn(`วงเงินเฉลี่ยต่อโครงการสูงสุดคืออำเภอ${esc(hi.label)} ${sf0(hi.s.mean)} บาท ต่ำสุดคืออำเภอ${esc(lo.label)} ${sf0(lo.s.mean)} บาท ส่วนเบี่ยงเบนมาตรฐานสูงสุดที่อำเภอ${esc(sd.label)} (${sf0(sd.s.std)} บาท)`,
+    ex=wsn(`วงเงินเฉลี่ยต่อโครงการสูงสุดคืออำเภอ${esc(hi.label)} ${sf0(hi.s.mean)} บาท ต่ำสุดคืออำเภอ${esc(lo.label)} ${sf0(lo.s.mean)} บาท โครงการต่างกันมากที่สุดที่อำเภอ${esc(sd.label)} (ห่างจากค่าเฉลี่ยโดยทั่วไป ${sf0(sd.s.std)} บาท)`,
       `ทั้งจังหวัดเฉลี่ย ${sf0(g.mean)} บาท ค่ากลาง ${sf0(g.med)} บาท ${skew}`,
       `เทียบอำเภอด้วยค่ากลางควบคู่ค่าเฉลี่ย แล้วเปิดอำเภอ${esc(sd.label)}เพื่อดูว่าวงเงินต่างกันมากเพราะกิจกรรมใด`,FD.h.scopeText(true))}
   else ex=wsn('มีอำเภอที่มีอย่างน้อย 2 โครงการน้อยกว่า 2 อำเภอ จึงเปรียบเทียบสถิติยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',FD.h.scopeText(true));
-  return card('dstat','สถิติเชิงพรรณารายอำเภอ','ตาราง','วงเงินอนุมัติต่อโครงการ · เปรียบเทียบทุกอำเภอ · ส่วนเบี่ยงเบนมาตรฐานคำนวณแบบตัวอย่าง (n−1)','',tbl+ex)}
+  return card('dstat','สถิติเชิงพรรณารายอำเภอ','ตาราง','วงเงินอนุมัติต่อโครงการ · เปรียบเทียบทุกอำเภอ · ค่าห่างจากค่าเฉลี่ยโดยทั่วไป คำนวณจากโครงการทั้งหมดในแต่ละอำเภอ','',tbl+ex)}
 FD.h.distStatRows=distStatRows;
 
 V.districts=function(){
@@ -1434,7 +1507,7 @@ V.districts=function(){
   const bs=ds.map(x=>FD.stat.summary(x.rows.map(r=>r.rate).filter(v=>v!=null))).map((s,i)=>({...s,label:ds[i].d})).filter(s=>s.n>=5);
   let bw;
   if(bs.length>=2){const hi=bs.reduce((a,b)=>b.med>a.med?b:a),lo=bs.reduce((a,b)=>b.med<a.med?b:a),wide=bs.reduce((a,b)=>(b.q3-b.q1)>(a.q3-a.q1)?b:a);
-    bw=wsn(`ค่ากลางร้อยละชำระคืนสูงสุดคืออำเภอ${esc(hi.label)} ${FD.pct(hi.med)} ต่ำสุดคืออำเภอ${esc(lo.label)} ${FD.pct(lo.med)} อำเภอ${esc(wide.label)}กว้างที่สุด (ช่วงกลาง 50% = ${FD.pct(wide.q1)}–${FD.pct(wide.q3)}, เกณฑ์สูง (P95) ${FD.pct(wide.p95)})`,
+    bw=wsn(`ค่ากลางร้อยละชำระคืนสูงสุดคืออำเภอ${esc(hi.label)} ${FD.pct(hi.med)} ต่ำสุดคืออำเภอ${esc(lo.label)} ${FD.pct(lo.med)} อำเภอ${esc(wide.label)}กว้างที่สุด (ครึ่งหนึ่งของโครงการอยู่ระหว่าง ${FD.pct(wide.q1)}–${FD.pct(wide.q3)} และ 95% ของโครงการไม่เกิน ${FD.pct(wide.p95)})`,
       `กล่องที่กว้างแสดงว่าโครงการในอำเภอนั้นชำระคืนไม่สม่ำเสมอ ส่วนค่ากลางต่ำแสดงว่าโครงการทั่วไปในอำเภอยังชำระคืนได้น้อย (อายุโครงการที่ต่างกันก็มีผล ควรอ่านร่วมกับปีที่อนุมัติ)`,
       `เปิดอำเภอ${esc(lo.label)}เพื่อดูตำบลและโครงการที่ชำระคืนต่ำ แล้วพิจารณาติดตามเป็นรายกลุ่ม`,FD.h.scopeText(true))}
   else bw=wsn('มีอำเภอที่ข้อมูลเพียงพอ (อย่างน้อย 5 โครงการ) น้อยกว่า 2 อำเภอ จึงเปรียบเทียบการกระจายยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',FD.h.scopeText(true));
@@ -1458,7 +1531,7 @@ V.districts=function(){
   return`<p class="stats" style="margin:0">กราฟและตารางในหน้านี้เปรียบเทียบทุกอำเภอ (ไม่ตัดตามตัวกรองอำเภอ) · กดที่อำเภอเพื่อดูรายละเอียด</p>`
   +card('dc','เปรียบเทียบรายอำเภอ','เปรียบเทียบ','เลือกตัวชี้วัดแล้วดูว่าอำเภอใดสูงหรือต่ำ',distMetricSeg(),distCompare('c-dc'))+hmCard
   +`<div class="grid2e">`+card('ds','สถานะเงินกู้ที่ยังไม่ได้คืนรายอำเภอ','สัดส่วน','แบ่งยอดที่ยังไม่ได้คืนตามสถานะการชำระ',stackSeg(),bucketStack('c-ds',groups,'รายอำเภอ'))
-  +card('db','การกระจายร้อยละชำระคืนรายอำเภอ','กระจาย','แต่ละโครงการชำระคืนไปกี่ % ของวงเงินอนุมัติ','',`${FD.boxLegend()}<div class="chart" id="c-dbox" data-click="district"></div>${bw}`+altTable('สถิติร้อยละชำระคืนรายอำเภอ',['อำเภอ','จำนวนโครงการ','เฉลี่ย','ค่ากลาง','เกณฑ์สูง (P95)'],bs.map(s=>[s.label,s.n,FD.pct(s.mean),FD.pct(s.med),FD.pct(s.p95)])))+`</div>`
+  +card('db','การกระจายร้อยละชำระคืนรายอำเภอ','กระจาย','แต่ละโครงการชำระคืนไปกี่ % ของวงเงินอนุมัติ','',`${FD.boxLegend()}<div class="chart" id="c-dbox" data-click="district"></div>${bw}`+altTable('สถิติร้อยละชำระคืนรายอำเภอ',['อำเภอ','จำนวนโครงการ','เฉลี่ย','ค่ากลาง','ค่าสูง (95% ไม่เกินนี้)'],bs.map(s=>[s.label,s.n,FD.pct(s.mean),FD.pct(s.med),FD.pct(s.p95)])))+`</div>`
   +card('dtab','ประสิทธิภาพการดำเนินงานรายอำเภอ','ตาราง','ผลงานของแต่ละอำเภอ (ใช้อำเภอแทนหน่วยงานที่ดูแลกลุ่ม) · หน่วยเงิน: ล้านบาท · กดหัวตารางเพื่อเรียงลำดับ','',distTable())+distStatsCard();
 };
 FD.h.distTable=distTable;FD.h.card=card;FD.h.kpi=kpi;FD.h.nodataCard=nodataCard;FD.h.bucketStack=bucketStack;FD.h.stackSeg=stackSeg;FD.h.hasData=hasData;FD.h.link=link;FD.h.cmp=cmp;FD.h.tr=tr;FD.h.mb=mb;
@@ -1485,8 +1558,8 @@ function projectTable(rows,opt){
   const sorted=sortRows(rows,s),start=(ST.ui.page-1)*ps,page=sorted.slice(start,start+ps),A=FD.agg(rows);
   const head=COLS.map(c=>{const on=s.k===c[0];return`<th scope="col" class="${c[2]}" aria-sort="${on?(s.d>0?'ascending':'descending'):'none'}"><button type="button" data-act="sort" data-t="p" data-k="${c[0]}">${c[1]}<span aria-hidden="true">${on?(s.d>0?'▲':'▼'):'↕'}</span></button></th>`}).join('');
   const body=page.map(r=>`<tr class="click" data-pid="${esc(r.pid)}" tabindex="0" aria-label="เปิดรายละเอียด ${esc(r.group)}">${COLS.map(c=>`<td class="${c[2]}${c[0]==='group'?' name':''}">${cell[c[0]](r)}</td>`).join('')}</tr>`).join('');
-  const foot=`<tr><td colspan="5">รวมตามตัวกรอง (${FD.f0(total)} โครงการ)</td><td class="n">${FD.f0(A.members)}</td><td></td><td class="n">${FD.f0(A.disb)}</td><td class="n">${FD.f0(A.repaid)}</td><td class="n">${FD.f0(A.outst)}</td><td class="n">${FD.f0(A.ov)}</td><td class="n">${FD.pct(A.repayRate)}</td><td></td></tr>`;
-  return`<div class="tscroll" style="max-height:70vh"><table class="t"><caption class="sr">ตารางโครงการเงินทุนหมุนเวียน กดหัวคอลัมน์เพื่อเรียงลำดับ กดแถวเพื่อดูรายละเอียด</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>
+  const foot=`<tr><td colspan="5">รวมตามตัวกรอง (${FD.f0(total)} โครงการ)</td><td class="n">${FD.f0(A.members)}</td><td></td><td class="n">${FD.f0(A.disb)}</td><td class="n">${FD.f0(A.repaid)}</td><td class="n">${FD.f0(A.outst)}</td><td class="n">${FD.f0(A.ov)}</td><td class="n">${FD.pct(A.repayRate)}</td><td></td><td></td><td></td></tr>`;
+  return`<div class="tscroll" style="max-height:70vh"><table class="t ptab"><caption class="sr">ตารางโครงการเงินทุนหมุนเวียน กดหัวคอลัมน์เพื่อเรียงลำดับ กดแถวเพื่อดูรายละเอียด</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>
   <div class="pager"><span aria-live="polite">แสดง ${FD.f0(total?start+1:0)}–${FD.f0(Math.min(total,start+ps))} จาก ${FD.f0(total)} โครงการ</span><div class="ctrls"><label>แถวต่อหน้า <span class="sel" style="display:inline-flex"><select data-act="psize" aria-label="แถวต่อหน้า" style="min-width:90px">${[10,25,50,100].map(n=>`<option ${n===ps?'selected':''}>${n}</option>`).join('')}</select></span></label><button class="btn" type="button" data-act="page" data-v="-1" ${ST.ui.page<=1?'disabled':''}>ก่อนหน้า</button><span>หน้า ${ST.ui.page}/${pages}</span><button class="btn" type="button" data-act="page" data-v="1" ${ST.ui.page>=pages?'disabled':''}>ถัดไป</button></div></div>`;
 }
 V.data=function(){
@@ -1549,14 +1622,14 @@ V.projects=function(){
   const dv=rows.map(r=>r.disb);let hs;
   queue(()=>{hs=FD.hist($('#c-hd'),dv,{fmt:v=>FD.f0(v)+' บาท',axFmt:cmp,xTitle:'วงเงินอนุมัติต่อโครงการ (บาท)',unitN:'โครงการ',aria:'การกระจายวงเงินอนุมัติต่อโครงการ'})});
   const sd=FD.stat.summary(dv),over=dv.filter(v=>v>sd.p95).length;
-  const hw=dv.length>=2?wsn(`โครงการส่วนใหญ่อนุมัติประมาณ ${FD.f0(sd.q1)}–${FD.f0(sd.q3)} บาท (ช่วงกลาง 50%) ค่ากลาง ${FD.f0(sd.med)} บาท เฉลี่ย ${FD.f0(sd.mean)} บาท สูงสุด ${FD.f0(sd.max)} บาท`,
-    `${sd.mean>sd.med*1.15?'ค่าเฉลี่ยสูงกว่าค่ากลางชัดเจน แสดงว่ามีบางโครงการวงเงินสูงกว่าส่วนใหญ่มาก ดึงค่าเฉลี่ยขึ้น':sd.med>sd.mean*1.15?'ค่ากลางสูงกว่าค่าเฉลี่ยชัดเจน แสดงว่าโครงการส่วนใหญ่ได้วงเงินสูงใกล้เพดาน และมีบางโครงการได้น้อยกว่ามาก ดึงค่าเฉลี่ยลง':'ค่าเฉลี่ยและค่ากลางใกล้กัน วงเงินต่อโครงการค่อนข้างสม่ำเสมอ'} ${over>0?`มี ${over} โครงการที่สูงกว่าเกณฑ์สูง (P95)`:'ไม่มีโครงการที่สูงกว่าเกณฑ์สูง (P95) เพราะค่านี้เท่ากับค่าสูงสุด'}`,
-    `${over>0?`ตรวจโครงการที่สูงกว่าเกณฑ์สูง (P95) (${FD.f0(sd.p95)} บาท) ว่าเป็นไปตามเกณฑ์วงเงินต่อกลุ่ม ก่อนพิจารณากำหนดเพดานหรือเกณฑ์อนุมัติ`:`ดูโครงการที่ได้ต่ำกว่าช่วงกลาง 50% (ต่ำกว่า ${FD.f0(sd.q1)} บาท) ว่าได้วงเงินน้อยด้วยเหตุผลใด เช่น ขอน้อย หรือถูกปรับลด`}`,H.scopeText()):'';
+  const hw=dv.length>=2?wsn(`โครงการส่วนใหญ่อนุมัติประมาณ ${FD.f0(sd.q1)}–${FD.f0(sd.q3)} บาท (ครึ่งหนึ่งของโครงการอยู่ในช่วงนี้) ค่ากลาง ${FD.f0(sd.med)} บาท เฉลี่ย ${FD.f0(sd.mean)} บาท สูงสุด ${FD.f0(sd.max)} บาท`,
+    `${sd.mean>sd.med*1.15?'ค่าเฉลี่ยสูงกว่าค่ากลางชัดเจน แสดงว่ามีบางโครงการวงเงินสูงกว่าส่วนใหญ่มาก ดึงค่าเฉลี่ยขึ้น':sd.med>sd.mean*1.15?'ค่ากลางสูงกว่าค่าเฉลี่ยชัดเจน แสดงว่าโครงการส่วนใหญ่ได้วงเงินสูงใกล้เพดาน และมีบางโครงการได้น้อยกว่ามาก ดึงค่าเฉลี่ยลง':'ค่าเฉลี่ยและค่ากลางใกล้กัน วงเงินต่อโครงการค่อนข้างสม่ำเสมอ'} ${over>0?`มี ${over} โครงการที่วงเงินสูงกว่า 95% ของโครงการทั้งหมด`:'ไม่มีโครงการที่สูงเกินค่าสูง เพราะค่าสูงนี้เท่ากับวงเงินสูงสุดพอดี'}`,
+    `${over>0?`ตรวจโครงการที่วงเงินสูงกว่า ${FD.f0(sd.p95)} บาท (สูงกว่า 95% ของโครงการทั้งหมด) ว่าเป็นไปตามเกณฑ์วงเงินต่อกลุ่ม ก่อนพิจารณากำหนดเพดานหรือเกณฑ์อนุมัติ`:`ดูโครงการที่ได้วงเงินน้อยสุด 1 ใน 4 (ต่ำกว่า ${FD.f0(sd.q1)} บาท) ว่าได้วงเงินน้อยด้วยเหตุผลใด เช่น ขอน้อย หรือถูกปรับลด`}`,H.scopeText()):'';
   /* hist members */
   const mv=mem.map(r=>r.members);
   queue(()=>FD.hist($('#c-hm'),mv,{fmt:v=>FD.f0(v)+' คน',xTitle:'จำนวนสมาชิกต่อโครงการ (คน)',unitN:'โครงการ',color:'#7C6BC2',aria:'การกระจายจำนวนสมาชิกต่อโครงการ'}));
   const ms=mv.length>=2?FD.stat.summary(mv):null;
-  const mw=ms?wsn(`โครงการมีสมาชิกเฉลี่ย ${FD.f1(ms.mean)} คน (ค่ากลาง ${FD.f0(ms.med)}, ต่ำสุด ${FD.f0(ms.min)}, สูงสุด ${FD.f0(ms.max)}, เกณฑ์สูง (P95) ${FD.f0(ms.p95)})`,
+  const mw=ms?wsn(`โครงการมีสมาชิกเฉลี่ย ${FD.f1(ms.mean)} คน (ค่ากลาง ${FD.f0(ms.med)}, ต่ำสุด ${FD.f0(ms.min)}, สูงสุด ${FD.f0(ms.max)}, 95% ของโครงการมีสมาชิกไม่เกิน ${FD.f0(ms.p95)})`,
     `ขนาดกลุ่มใหญ่ขึ้นหมายถึงผู้ได้ประโยชน์ต่อโครงการมากขึ้น แต่ก็อาจดูแลติดตามยากขึ้น (ข้อสังเกตทั่วไป)`,
     `ดูควบคู่กับกราฟความสัมพันธ์ด้านล่างว่าวงเงินเพิ่มตามจำนวนสมาชิกหรือไม่`,H.scopeText()):'';
   /* box by activity */
@@ -1564,22 +1637,22 @@ V.projects=function(){
   queue(()=>{bi=FD.box($('#c-ba'),ga,{fmt:v=>FD.f0(v)+' บาท',axFmt:cmp,xTitle:'วงเงินอนุมัติต่อโครงการ (บาท)',aria:'วงเงินอนุมัติต่อโครงการแยกตามกิจกรรม'})});
   const bs=acts.map(g=>({label:g.k,...FD.stat.summary(g.rows.map(r=>r.disb))})).filter(s=>s.n>=5&&s.label!=='อื่น ๆ');
   const bw=bs.length>=2?(()=>{const hi=bs.reduce((a,b)=>b.med>a.med?b:a),lo=bs.reduce((a,b)=>b.med<a.med?b:a),wide=bs.reduce((a,b)=>(b.q3-b.q1)>(a.q3-a.q1)?b:a);
-    return wsn(`ค่ากลางวงเงินสูงสุดคือ “${esc(hi.label)}” ${FD.f0(hi.med)} บาท ต่ำสุดคือ “${esc(lo.label)}” ${FD.f0(lo.med)} บาท กิจกรรม “${esc(wide.label)}” มีช่วงกลาง 50% กว้างที่สุด (${FD.f0(wide.q1)}–${FD.f0(wide.q3)} บาท)`,
-    `กิจกรรมที่กล่องกว้างมีวงเงินต่อโครงการต่างกันมาก ควรมีเกณฑ์พิจารณาที่ชัดเจนขึ้น (แสดงเฉพาะกิจกรรมที่มี ≥5 โครงการในการเทียบ)`,
-    `ตรวจเกณฑ์วงเงินของ “${esc(wide.label)}” และดูค่าที่ห่างจากกลุ่มมาก (วงกลมโปร่ง) เป็นรายโครงการในตาราง`,H.scopeText())})():wsn('มีกิจกรรมที่ข้อมูลเพียงพอ (≥5 โครงการ) น้อยกว่า 2 ประเภท จึงเปรียบเทียบการกระจายยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',H.scopeText());
+    return wsn(`ค่ากลางวงเงินสูงสุดคือ “${esc(hi.label)}” ${FD.f0(hi.med)} บาท ต่ำสุดคือ “${esc(lo.label)}” ${FD.f0(lo.med)} บาท กิจกรรม “${esc(wide.label)}” มีวงเงินต่างกันมากที่สุด (ครึ่งหนึ่งของโครงการอยู่ระหว่าง ${FD.f0(wide.q1)}–${FD.f0(wide.q3)} บาท)`,
+    `กิจกรรมที่กล่องกว้างมีวงเงินต่อโครงการต่างกันมาก ควรมีเกณฑ์พิจารณาที่ชัดเจนขึ้น (เทียบเฉพาะกิจกรรมที่มี 5 โครงการขึ้นไป)`,
+    `ตรวจเกณฑ์วงเงินของ “${esc(wide.label)}” และดูโครงการที่ต่างจากส่วนใหญ่มาก (วงกลมโปร่ง) เป็นรายโครงการในตาราง`,H.scopeText())})():wsn('มีกิจกรรมที่มี 5 โครงการขึ้นไปน้อยกว่า 2 ประเภท จึงเปรียบเทียบการกระจายยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',H.scopeText());
   /* scatter */
   const pts=mem.map(r=>({x:r.members,y:r.disb,label:r.group}));let reg;
   queue(()=>{reg=FD.scatter($('#c-sc'),pts,{xName:'สมาชิก',yName:'อนุมัติ',xFmtT:v=>FD.f0(v)+' คน',yFmtT:v=>FD.f0(v)+' บาท',yFmt:cmp,xTitle:'จำนวนสมาชิก (คน)',yTitle:'วงเงินอนุมัติ (บาท)',aria:'ความสัมพันธ์ระหว่างจำนวนสมาชิกกับวงเงินอนุมัติ'})});
   const rg=pts.length>=3?FD.stat.linreg(pts.map(p=>p.x),pts.map(p=>p.y)):null;
-  const sw=rg?wsn(`ความสัมพันธ์ระหว่างจำนวนสมาชิกกับวงเงินอนุมัติอยู่ระดับ${strength(rg.r)} (ค่าความสัมพันธ์ r = ${rg.r.toFixed(2)} จาก ${FD.f0(rg.n)} โครงการ) เส้นแนวโน้มบอกว่าสมาชิกเพิ่ม 1 คน วงเงินอนุมัติเปลี่ยนประมาณ ${rg.slope>=0?'+':'−'}${FD.f0(Math.abs(rg.slope))} บาท`,
+  const sw=rg?wsn(`ความสัมพันธ์ระหว่างจำนวนสมาชิกกับวงเงินอนุมัติอยู่ระดับ${strength(rg.r)} (ค่า r = ${rg.r.toFixed(2)} ยิ่งใกล้ 0 ยิ่งแทบไม่เกี่ยวกัน จาก ${FD.f0(rg.n)} โครงการ) ทิศทางโดยรวมของจุดบอกว่าสมาชิกเพิ่ม 1 คน วงเงินอนุมัติเปลี่ยนประมาณ ${rg.slope>=0?'+':'−'}${FD.f0(Math.abs(rg.slope))} บาท`,
     `${Math.abs(rg.r)<.4?'วงเงินแทบไม่ขึ้นกับขนาดกลุ่ม แสดงว่าวงเงินถูกกำหนดจากปัจจัยอื่นมากกว่าจำนวนสมาชิก':'วงเงินสัมพันธ์กับขนาดกลุ่มพอสมควร'} (ความสัมพันธ์ไม่ได้พิสูจน์สาเหตุ และยังไม่ได้แยกตามกิจกรรมหรืออำเภอ)`,
     `ตรวจโครงการที่อยู่ไกลจากเส้นแนวโน้มมาก (วงเงินสูงเมื่อเทียบกับจำนวนสมาชิก) ว่ามีเหตุผลรองรับหรือไม่`,H.scopeText()):wsn('ต้องมีโครงการที่ระบุจำนวนสมาชิกอย่างน้อย 3 โครงการ จึงจะวิเคราะห์ความสัมพันธ์ได้','–','เติมคอลัมน์จำนวนสมาชิกในไฟล์ข้อมูล',H.scopeText());
   return kp
    +`<div class="grid2e">`+card('pa','สัดส่วนวงเงินอนุมัติตามประเภทกิจกรรม','สัดส่วน','เงินกู้ไปอยู่ที่กิจกรรมใดมากที่สุด','',`<div class="chart" id="c-pact"></div>${aw}`+altTable('วงเงินอนุมัติตามกิจกรรม',['กิจกรรม','อนุมัติ (บาท)','ร้อยละ','โครงการ'],acts.map(g=>[g.k,FD.f0(g.a.disb),FD.pct(g.a.disb/A.disb*100),g.a.n])))
-   +card('ba','วงเงินต่อโครงการแยกตามกิจกรรม','กระจาย','เทียบการกระจายของวงเงินอนุมัติระหว่างกิจกรรม','',`${FD.boxLegend()}<div class="chart" id="c-ba"></div>${bw}`+altTable('สถิติวงเงินอนุมัติต่อโครงการ (บาท)',['กิจกรรม','จำนวนโครงการ','เฉลี่ย','ค่ากลาง','เกณฑ์สูง (P95)'],bs.map(s=>[s.label,s.n,FD.f0(s.mean),FD.f0(s.med),FD.f0(s.p95)])))+`</div>`
+   +card('ba','วงเงินต่อโครงการแยกตามกิจกรรม','กระจาย','เทียบการกระจายของวงเงินอนุมัติระหว่างกิจกรรม','',`${FD.boxLegend()}<div class="chart" id="c-ba"></div>${bw}`+altTable('สถิติวงเงินอนุมัติต่อโครงการ (บาท)',['กิจกรรม','จำนวนโครงการ','เฉลี่ย','ค่ากลาง','ค่าสูง (95% ไม่เกินนี้)'],bs.map(s=>[s.label,s.n,FD.f0(s.mean),FD.f0(s.med),FD.f0(s.p95)])))+`</div>`
    +`<div class="grid2e">`+card('hd','การกระจายวงเงินอนุมัติต่อโครงการ','กระจาย','โครงการส่วนใหญ่อยู่ช่วงวงเงินใด',FD.histLegend(),`<div class="chart" id="c-hd"></div>${statLine(sd,v=>FD.f0(v)+' บาท','วงเงินอนุมัติ')}${hw}`)
    +card('hm','การกระจายจำนวนสมาชิกต่อโครงการ','กระจาย','ขนาดกลุ่มของโครงการ',FD.histLegend(),`<div class="chart" id="c-hm"></div>${ms?statLine(ms,v=>FD.f1(v)+' คน','สมาชิก'):''}${mw}`)+`</div>`
-   +card('sc','จำนวนสมาชิกกับวงเงินอนุมัติ','ความสัมพันธ์','แต่ละจุดคือ 1 โครงการ เส้นประคือเส้นแนวโน้ม','',`<div class="legend"><span><i style="background:#2F6DB5;opacity:.5;border-radius:50%"></i>โครงการ</span><span><i class="ln dash" style="border-color:#D25D72"></i>เส้นแนวโน้ม</span></div><div class="chart" id="c-sc"></div>${sw}`);
+   +card('sc','จำนวนสมาชิกกับวงเงินอนุมัติ','ความสัมพันธ์','แต่ละจุดคือ 1 โครงการ เส้นประคือทิศทางโดยรวมของจุด','',`<div class="legend"><span><i style="background:#2F6DB5;opacity:.5;border-radius:50%"></i>โครงการ</span><span><i class="ln dash" style="border-color:#D25D72"></i>ทิศทางโดยรวม</span></div><div class="chart" id="c-sc"></div>${sw}`);
 };
 
 /* ---------- repayment ---------- */
@@ -1595,23 +1668,23 @@ V.repay=function(){
   const TB=trendBundle(ST.sel,ST.selPay,g),S=TB.S;let rs='';
   if(S.hasPay)queue(()=>FD.line($('#c-rp'),{labels:S.labels,series:[{name:'ชำระคืน',color:'#7C6BC2',values:S.hasPay?S.pay:null,trend:TB.rp}],div:1e6,unit:'ล้านบาท',yTitle:'ล้านบาท',showTrend:ST.ui.trend,forecast:ST.ui.trend&&TB.rp?[TB.fc[1]]:null,nextLabel:TB.next,aria:'ยอดชำระคืนรายช่วง',nodata:S.hasPay?'ไม่มีรายการชำระคืนในขอบเขตนี้':'ยังไม่มีข้อมูลรายการชำระคืนรายครั้ง (ข้อมูลต้นทางมีเฉพาะวันที่รับชำระล่าสุด ไม่มียอดชำระรายครั้ง)'}));
   if(S.hasPay&&S.labels.length){const sd=FD.stat.summary(S.pay),l=S.labels.length-1;
-    rs=wsn(`ช่วง ${S.labels[0]}–${S.labels[l]} ชำระคืนรวม ${M(FD.stat.sum(S.pay))} เฉลี่ยต่อ${GRAN[g].n} ${M(sd.mean)} (ความต่างจากค่าเฉลี่ยโดยทั่วไป SD ${sd.std==null?'–':M(sd.std)}, เกณฑ์สูง (P95) ${M(sd.p95)}) ${GRAN[g].n}ล่าสุด ${M(S.pay[l])}`,
+    rs=wsn(`ช่วง ${S.labels[0]}–${S.labels[l]} ชำระคืนรวม ${M(FD.stat.sum(S.pay))} เฉลี่ยต่อ${GRAN[g].n} ${M(sd.mean)} (ปกติห่างจากค่าเฉลี่ยราว ${sd.std==null?'–':M(sd.std)} โดย 95% ของช่วงไม่เกิน ${M(sd.p95)}) ${GRAN[g].n}ล่าสุด ${M(S.pay[l])}`,
       sd.mean>0&&S.labels.length>=2?`${GRAN[g].n}ล่าสุด${S.pay[l]>=sd.mean?'สูงกว่า':'ต่ำกว่า'}ค่าเฉลี่ย ${FD.pct(Math.abs(S.pay[l]-sd.mean)/sd.mean*100)} ช่วงล่าสุดอาจยังไม่ครบ${GRAN[g].n}จึงอาจดูต่ำกว่าจริง`:'ข้อมูลยังน้อยเกินกว่าจะเทียบกับค่าเฉลี่ย',
       TB.rp?`ถ้าแนวโน้มเส้นตรงยังเป็นเช่นเดิม ${TB.next} จะมีการชำระคืนประมาณ ${M(TB.fc[1])} (ประมาณการเบื้องต้น ไม่ใช่ค่ายืนยัน) ใช้วางแผนเงินหมุนกลับเข้ากองทุน`:`ต้องมีข้อมูลอย่างน้อย 4 ${GRAN[g].n} จึงจะคาดการณ์ได้`,H.scopeText())}
   /* hist repay rate */
   const rv=rows.map(r=>r.rate).filter(v=>v!=null);
   queue(()=>FD.hist($('#c-hr'),rv,{fixed:{min:0,max:100,step:10},fmt:v=>FD.pct(v,0),axFmt:v=>v+'%',xTitle:'ร้อยละชำระคืนต่อโครงการ',unitN:'โครงการ',color:'#7C6BC2',aria:'การกระจายร้อยละชำระคืน'}));
   const rsu=rv.length>=2?FD.stat.summary(rv):null,lowN=rv.filter(v=>v<25).length,hiN=rv.filter(v=>v>=100).length;
-  const rw=rsu?wsn(`โครงการชำระคืนเฉลี่ย ${FD.pct(rsu.mean)} (ค่ากลาง ${FD.pct(rsu.med)}, ช่วงกลาง 50% = ${FD.pct(rsu.q1)}–${FD.pct(rsu.q3)}) มี ${lowN} โครงการที่ชำระคืนต่ำกว่า 25% และ ${hiN} โครงการที่ชำระครบแล้ว`,
+  const rw=rsu?wsn(`โครงการชำระคืนเฉลี่ย ${FD.pct(rsu.mean)} (ค่ากลาง ${FD.pct(rsu.med)} ครึ่งหนึ่งของโครงการอยู่ระหว่าง ${FD.pct(rsu.q1)}–${FD.pct(rsu.q3)}) มี ${lowN} โครงการที่ชำระคืนต่ำกว่า 25% และ ${hiN} โครงการที่ชำระครบแล้ว`,
     `${Math.abs(rsu.mean-rsu.med)>8?'ค่าเฉลี่ยกับค่ากลางต่างกันมาก แสดงว่าโครงการแบ่งเป็นกลุ่มที่ชำระดีกับกลุ่มที่ล่าช้าชัดเจน':'ค่าเฉลี่ยกับค่ากลางใกล้กัน โครงการส่วนใหญ่ชำระคืนใกล้เคียงกัน'} ทั้งนี้โครงการใหม่จะมีร้อยละต่ำตามธรรมชาติ จึงควรดูควบคู่กับอายุโครงการ`,
     `แยกดูโครงการอายุมากแต่ชำระคืนต่ำก่อน (กรองปีงบประมาณ) แล้วจัดลำดับการติดตาม`,H.scopeText()):'';
   /* box by activity */
   const acts=groupBy(rows,'act').sort((a,b)=>b.a.disb-a.a.disb);
   queue(()=>FD.box($('#c-rb'),acts.map(x=>({label:x.k,values:x.rows.map(r=>r.rate).filter(v=>v!=null)})),{fmt:v=>FD.pct(v),axFmt:t=>t+'%',xTitle:'ร้อยละชำระคืนต่อโครงการ',max:Math.max(100,...rv)<=100?100:undefined,step:20,color:'#7C6BC2',aria:'ร้อยละชำระคืนแยกตามกิจกรรม'}));
   const bs=acts.map(x=>({label:x.k,...FD.stat.summary(x.rows.map(r=>r.rate).filter(v=>v!=null))})).filter(s=>s.n>=5&&s.label!=='อื่น ๆ');
-  const bw=bs.length>=2?(()=>{const hi=bs.reduce((a,b)=>b.med>a.med?b:a),lo=bs.reduce((a,b)=>b.med<a.med?b:a);return wsn(`ค่ากลางร้อยละชำระคืนสูงสุดคือ “${esc(hi.label)}” ${FD.pct(hi.med)} ต่ำสุดคือ “${esc(lo.label)}” ${FD.pct(lo.med)} (เกณฑ์สูง (P95) ของ “${esc(lo.label)}” ${FD.pct(lo.p95)})`,
+  const bw=bs.length>=2?(()=>{const hi=bs.reduce((a,b)=>b.med>a.med?b:a),lo=bs.reduce((a,b)=>b.med<a.med?b:a);return wsn(`ค่ากลางร้อยละชำระคืนสูงสุดคือ “${esc(hi.label)}” ${FD.pct(hi.med)} ต่ำสุดคือ “${esc(lo.label)}” ${FD.pct(lo.med)} (95% ของโครงการใน “${esc(lo.label)}” ชำระคืนไม่เกิน ${FD.pct(lo.p95)})`,
     `กิจกรรมที่ค่ากลางต่ำอาจมีความเสี่ยงชำระคืนล่าช้ามากกว่า แต่ยังต้องเทียบอายุโครงการและฤดูกาลของกิจกรรมก่อนสรุป`,
-    `พิจารณามาตรการติดตามหรือปรับเงื่อนไขการผ่อนชำระสำหรับ “${esc(lo.label)}” หลังตรวจสาเหตุรายโครงการ`,H.scopeText())})():wsn('มีกิจกรรมที่ข้อมูลเพียงพอ (≥5 โครงการ) น้อยกว่า 2 ประเภท จึงเปรียบเทียบการกระจายยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',H.scopeText());
+    `พิจารณามาตรการติดตามหรือปรับเงื่อนไขการผ่อนชำระสำหรับ “${esc(lo.label)}” หลังตรวจสาเหตุรายโครงการ`,H.scopeText())})():wsn('มีกิจกรรมที่มี 5 โครงการขึ้นไปน้อยกว่า 2 ประเภท จึงเปรียบเทียบการกระจายยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',H.scopeText());
   /* bucket by activity */
   const bg=acts.map(x=>({k:x.k,rows:x.rows,a:x.a}));
   /* follow-up table */
@@ -1668,8 +1741,7 @@ async function build(){
   try{await Promise.all([document.fonts.load("600 14px Kanit"),document.fonts.load("400 10px Kanit")])}catch(e){}
   let logoSrc=(document.querySelector('#brand-mark img')||{}).src||'';const logo=logoSrc?await loadImg(logoSrc):null;
   const title='รายงานสรุปเงินทุนหมุนเวียน (เงินกู้) กองทุนพัฒนาบทบาทสตรี จังหวัดกระบี่';
-  const when=new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'});
-  const sub=`ขอบเขต: ${H.scopeText()}  ·  ข้อมูล ณ ${meta.asOf||'-'}  ·  จัดทำเมื่อ ${when}`;
+  const sub=`ขอบเขต: ${H.scopeText()}  ·  ข้อมูล ณ ${meta.asOf||'-'}`;
   const src='แหล่งข้อมูล: '+(meta.source||'ไม่ระบุ')+(ST.source==='test'?'  (ข้อมูลทดสอบ)':'');
   const pages=[];
   /* ---- หน้า 1 ---- */
@@ -1703,7 +1775,7 @@ async function build(){
   const total=FD.agg(ST.sel);
   const drawRow=(d,a,bold)=>{font(x,9,bold?600:400);x.fillStyle=INK;x.fillText(d,28,y+2);x.textAlign='right';
     x.fillText(f0(a.n),150,y+2);x.fillText(mb(a.disb),222,y+2);x.fillText(mb(a.repaid),292,y+2);x.fillText(mb(a.outst),362,y+2);x.textAlign='left';
-    if(a.onTime!=null){x.fillStyle='#E3E8F3';rrect(x,432,y-5,90,7,3.5);x.fill();x.fillStyle=(total.onTime!=null&&a.onTime<total.onTime&&!bold)?AMBER:PURPLE;rrect(x,432,y-5,Math.max(2,90*a.onTime/100),7,3.5);x.fill();x.fillStyle=INK;font(x,8.5,bold?600:400);x.fillText(FD.pct(a.onTime),526,y+2)}
+    if(a.onTime!=null){x.fillStyle='#E3E8F3';rrect(x,432,y-5,90,7,3.5);x.fill();x.fillStyle=(total.onTime!=null&&a.onTime<total.onTime&&!bold)?AMBER:PURPLE;rrect(x,432,y-5,Math.max(2,90*a.onTime/100),7,3.5);x.fill();x.fillStyle=INK;font(x,8.5,bold?600:400);x.fillText(FD.pct(a.onTime),526,y+2)}else{x.fillStyle=MUTED;font(x,8.5,400);x.fillText('– (ไม่มียอดคงเหลือ)',432,y+2)}
     x.strokeStyle=LINE;x.lineWidth=.5;x.beginPath();x.moveTo(28,y+8);x.lineTo(W-28,y+8);x.stroke();y+=17};
   ds.forEach(d=>drawRow(d.d,d.a,false));
   if(ds.length>1)drawRow('รวม',total,true);
@@ -1716,11 +1788,31 @@ async function build(){
     segs.forEach((sg,i)=>{const lx=28+i*((W-56)/3);x.fillStyle=sg[2];x.fillRect(lx,y-8,9,9);x.fillStyle=INK;font(x,8.5,600);x.fillText(sg[0],lx+14,y);font(x,8.5,400);x.fillStyle=MUTED;x.fillText(`${FD.pct(sg[1]/bt*100)} · ${(sg[1]/1e6).toFixed(2)} ล้านบาท · ${f0(sg[3])} โครงการ`,lx+14,y+12)});y+=22}
   else{font(x,9,400);x.fillStyle=MUTED;x.fillText('ไม่มียอดที่ยังไม่ได้คืนในขอบเขตนี้',28,y+8)}
   {const SC=FD.STATUSES.map(b=>{const rr=rows.filter(r=>r.status===b.key);return{b,n:rr.length,o:rr.reduce((t,r)=>t+r.outst,0)}}).filter(q=>q.n>0);
-   y+=26;y=h2(x,'สถานะโครงการ (นิยามของกองทุน ณ '+(meta.asOf||'-')+')',y);
+   y+=26;y=h2(x,'สถานะโครงการ (ตามนิยามของกองทุน)',y);
    const cw=(W-56)/3;SC.forEach((q,i)=>{const cx=28+(i%3)*cw,cy=y+Math.floor(i/3)*26;x.fillStyle=q.b.color;x.fillRect(cx,cy-8,9,9);x.fillStyle=INK;font(x,8.5,600);x.fillText(q.b.label,cx+14,cy);font(x,8.5,400);x.fillStyle=MUTED;x.fillText(`${f0(q.n)} โครงการ · ${q.o>0?(q.o/1e6).toFixed(2)+' ล้านบาท':'ชำระครบ'}`,cx+14,cy+12)});
    y+=Math.ceil(SC.length/3)*26}
-  footer(x,1,2,src);
-  /* ---- หน้า 2 ---- */
+  footer(x,1,3,src);
+  /* ---- หน้า 2: สรุปผลและข้อเสนอแนะ (Business/Decision Insight) ---- */
+  ({c,x}=newPage());pages.push(c);header(x,logo,title,'');y=88;
+  {const DD=H.decisionData?H.decisionData():{items:[],resp:[]};
+   y=h2(x,'สรุปผลและข้อเสนอแนะ: Insight ที่นำไปใช้จริง',y);
+   x.fillStyle=MUTED;font(x,8.5,400);x.fillText('ข้อมูลบอกอะไร และเอาข้อมูลไปทำอะไรต่อ (เรียงตามความสำคัญ)',28,y-4);y+=16;
+   DD.items.slice(0,5).forEach((i,k)=>{
+     x.fillStyle=BLUE;x.beginPath();x.arc(37,y-3,8,0,7);x.fill();x.fillStyle='#fff';font(x,9,600);x.textAlign='center';x.fillText(String(k+1),37,y);x.textAlign='left';
+     x.fillStyle=NAVY;font(x,10,600);x.fillText(fit(x,strip(i.t),W-56-30),52,y);y+=14;
+     const row=(lab,txt)=>{font(x,9,600);x.fillStyle=BLUE;x.fillText(lab,52,y);const off=x.measureText(lab+' ').width;font(x,9,400);x.fillStyle=INK;
+       wrap(x,strip(txt),W-56-24-off).slice(0,4).forEach((l,j)=>{x.fillText(l,52+off,y);y+=12.5})};
+     row('ข้อมูลบอกว่า',i.f);row('เอาไปทำต่อ',i.u);y+=5;
+     x.strokeStyle=LINE;x.lineWidth=.5;x.beginPath();x.moveTo(52,y-6);x.lineTo(W-28,y-6);x.stroke()});
+   if(DD.resp.length){y+=6;y=h2(x,'วิธีรับมือ & ผลกระทบ (สั้น ๆ)',y);
+     DD.resp.slice(0,4).forEach(r=>{
+       x.fillStyle=RED;x.fillRect(28,y-9,3,12);x.fillStyle=NAVY;font(x,9.5,600);x.fillText(fit(x,strip(r.t),W-56-14),38,y);y+=13;
+       const row=(lab,txt)=>{font(x,9,600);x.fillStyle=BLUE;x.fillText(lab,38,y);const off=x.measureText(lab+' ').width;font(x,9,400);x.fillStyle=INK;
+         wrap(x,strip(txt),W-56-14-off).slice(0,3).forEach(l=>{x.fillText(l,38+off,y);y+=12.5})};
+       row('วิธีรับมือ',r.m);row('ผลกระทบ',r.i);y+=6});
+     x.fillStyle=MUTED;font(x,8,400);x.fillText('ตัวเลขผลกระทบเป็นการประมาณจากข้อมูลที่เลือก ไม่ใช่ผลที่รับรองได้',28,y+2)}}
+  footer(x,2,3,src);
+  /* ---- หน้า 3 ---- */
   ({c,x}=newPage());pages.push(c);header(x,logo,title,'');y=88;
   y=h2(x,'กลุ่มที่ควรติดตามก่อน (เรียงตามยอดค้างชำระ)',y);
   const od=rows.filter(r=>r.ov>0).sort((a,b)=>(b.ov-a.ov)||(b.odays-a.odays)||String(a.pid).localeCompare(String(b.pid)));
@@ -1739,7 +1831,7 @@ async function build(){
   const notes=['ยอดค้างชำระนับยอดที่ยังไม่ได้คืนทั้งก้อน เมื่อสัญญาครบกำหนดแล้ว ไฟล์ไม่มีตารางงวดผ่อนชำระ หากมีการผ่อนผันหรือขยายเวลา ยอดจริงจะน้อยกว่านี้',
    'ใช้เฉพาะเงินต้น ไม่รวมดอกเบี้ยและค่าปรับ',(()=>{const T=rows.filter(r=>r.date&&r.end),o=T.filter(r=>r.termOver);return T.length?'กติกาให้ผ่อนชำระไม่เกิน 2 ปี แต่ข้อมูลมี '+f0(o.length)+' จาก '+f0(T.length)+' สัญญา ('+FD.pct(o.length/T.length*100)+') ที่ระยะสัญญาเกิน 2 ปี แสดงตามที่บันทึกในไฟล์ ควรตรวจกับเอกสารสัญญา':'ไฟล์ไม่มีวันที่สิ้นสุดสัญญา จึงตรวจระยะสัญญาไม่ได้'})(),'ปีงบประมาณในไฟล์ไม่ตรงกับวันเริ่มสัญญาในหลายสัญญา กราฟตามเวลานับตามวันเริ่มสัญญา','ตัวเลขทั้งหมดคำนวณจากไฟล์ข้อมูลตามตัวกรองที่เลือก ดูวิธีคิดแต่ละตัวได้ที่หน้า “ที่มาของตัวเลข” ในเว็บไซต์'];
   notes.forEach(t=>{font(x,9,400);x.fillStyle=BLUE;x.beginPath();x.arc(32,y-3,1.8,0,7);x.fill();x.fillStyle=INK;wrap(x,t,W-56-12).forEach(l=>{x.fillText(l,38,y);y+=12.5});y+=3});
-  footer(x,2,2,src);
+  footer(x,3,3,src);
   return pages;
 }
 /* ---- เขียนไฟล์ PDF ---- */
@@ -1793,7 +1885,7 @@ V.reports=function(){
    <div class="grid3" style="margin-top:1rem">
     <div class="card"><h3 class="t">CSV</h3><p style="color:var(--muted);margin:.3rem 0 .8rem">ไฟล์ข้อความ เปิดด้วย Excel ได้ ภาษาไทยไม่เพี้ยน (UTF-8)</p><label class="field">ชุดข้อมูล<span class="sel"><select data-act="csvset" style="max-width:none;width:100%">${sets.map(s=>`<option value="${s[0]}" ${ST.ui.csvSet===s[0]?'selected':''}>${esc(s[1])}</option>`).join('')}</select></span></label><button class="btn primary" type="button" data-act="export" data-v="csv" style="margin-top:.8rem">${ICON('download')} ดาวน์โหลด CSV</button></div>
     <div class="card"><h3 class="t">Excel (.xlsx)</h3><p style="color:var(--muted);margin:.3rem 0 .8rem">สมุดงานหลายแผ่น: สรุป KPI, รายโครงการ, สรุปรายอำเภอ${ST.pay.length?', รายการชำระคืน':''} พร้อมหัวตารางตรึงและตัวกรอง</p><button class="btn primary" type="button" data-act="export" data-v="xlsx">${ICON('download')} ดาวน์โหลด Excel</button></div>
-    <div class="card"><h3 class="t">PDF</h3><p style="color:var(--muted);margin:.3rem 0 .8rem">ดาวน์โหลดรายงานสรุป 2 หน้า (A4 แนวตั้ง) ตามตัวกรองที่เลือก หรือพิมพ์แต่ละหน้าของแดชบอร์ดเป็น PDF จากเบราว์เซอร์</p><div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="pdfdl">${ICON('download')} ดาวน์โหลด PDF สรุป</button>${pdfBtn('overview','ภาพรวม')}${pdfBtn('districts','รายอำเภอ')}${pdfBtn('projects','โครงการและสมาชิก')}${pdfBtn('repay','การชำระคืน')}</div></div>
+    <div class="card"><h3 class="t">PDF</h3><p style="color:var(--muted);margin:.3rem 0 .8rem">ดาวน์โหลดรายงานสรุป 3 หน้า (A4 แนวตั้ง) ตามตัวกรองที่เลือก หรือพิมพ์แต่ละหน้าของแดชบอร์ดเป็น PDF จากเบราว์เซอร์</p><div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" data-act="pdfdl">${ICON('download')} ดาวน์โหลด PDF สรุป</button>${pdfBtn('overview','ภาพรวม')}${pdfBtn('districts','รายอำเภอ')}${pdfBtn('projects','โครงการและสมาชิก')}${pdfBtn('repay','การชำระคืน')}</div></div>
    </div>
    <p class="stats">PDF พิมพ์ตามหน้าจอที่เลือกพร้อมคำอธิบาย What / So what / Now what ถ้าต้องการเฉพาะหน้าที่เปิดอยู่ให้กด “PDF” จากเมนู “ส่งออกรายงาน” ด้านบน · ตารางโครงการใน PDF แสดงเฉพาะหน้าที่เปิด ใช้ CSV หรือ Excel สำหรับข้อมูลครบทุกแถว</p>`);
 };
@@ -1821,12 +1913,12 @@ V.help=function(){
   const rows=FD.FIELDS.map(f=>`<tr><td><code>${f.k}</code></td><td>${esc(f.th)}</td><td>${esc(f.type)}</td><td>${esc(f.req)}</td><td>${esc(f.ex)}</td><td>${esc(f.desc)}</td></tr>`).join('');
   const rows2=FD.PAYFIELDS.map(f=>`<tr><td><code>${f.k}</code></td><td>${esc(f.th)}</td></tr>`).join('');
   return card('hp','วิธีใช้อย่างย่อ','','','',`<div class="prose"><ol><li>เลือก <b>ปีงบประมาณ อำเภอ ประเภทกิจกรรม สถานะการชำระ หรือสถานะโครงการ</b> จากแถบตัวกรอง ทุกกราฟ ตัวเลข และตารางจะเปลี่ยนตาม</li><li>พิมพ์ชื่อกลุ่มหรือเลขที่โครงการในช่องค้นหาด้านบน ระบบจะกรองให้ทันที (กด Enter เพื่อไปหน้าตารางโครงการ)</li><li>กดที่อำเภอในกราฟหรือตารางเพื่อดูรายละเอียดระดับตำบลและโครงการ ใช้แถบเส้นทาง (breadcrumb) ด้านบนเพื่อย้อนกลับ</li><li>กด <b>ส่งออกรายงาน</b> เพื่อดาวน์โหลด CSV, Excel หรือพิมพ์เป็น PDF ตามตัวกรองที่เลือก</li><li>ปรับขนาดตัวอักษรได้จากเมนู “ตัวอักษร” มุมขวาบน</li></ol>
-   <h3>นิยามตัวชี้วัด</h3><ul><li><b>วงเงินอนุมัติสะสม</b> = ผลรวมวงเงินอนุมัติของโครงการ</li><li><b>ชำระคืนสะสม</b> = ผลรวมเงินต้นที่ชำระคืนแล้ว · <b>ร้อยละชำระคืน</b> = ชำระคืน ÷ อนุมัติ × 100</li><li><b>ยอดที่ยังไม่ได้คืน</b> = อนุมัติ − ชำระคืน (ต่อโครงการไม่ต่ำกว่า 0)</li><li><b>ยอดค้างชำระ</b> = ส่วนของยอดที่ยังไม่ได้คืนที่เลยกำหนดชำระ (ไม่เกินยอดที่ยังไม่ได้คืน)</li><li><b>ชำระตามกำหนด</b> = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน × 100</li><li><b>สถานะการชำระ</b>: ชำระตามกำหนด (ไม่มียอดค้าง) · ค้างชำระ 1–90 วัน · ค้างชำระเกิน 90 วัน (ตามจำนวนวันค้างชำระของโครงการ)</li><li><b>สถานะโครงการ</b>: ปิดโครงการ = ชำระครบ · ดำเนินโครงการอยู่ = สัญญายังไม่สิ้นสุด · ผิดนัดชำระ = สิ้นสุดสัญญาไม่เกิน 1 ปี · ไกล่เกลี่ย = 1–2 ปี · ดำเนินการฟ้อง = ตั้งแต่ 2 ปี (สามกลุ่มหลังต้องค้างเกิน 5% ของเงินต้น) · ค้างไม่เกิน 5% = สิ้นสุดสัญญาแล้วแต่ค้างไม่เกิน 5%</li><li><b>ระยะสัญญา</b> = วันสิ้นสุด − วันเริ่มสัญญา · กติกาของกองทุนให้ผ่อนชำระไม่เกิน 2 ปี</li><li><b>ปีงบประมาณ</b> เริ่ม 1 ตุลาคม สิ้นสุด 30 กันยายน (พ.ศ.) · ตัวกรองปีงบประมาณใช้ “ปีที่อนุมัติโครงการ”</li><li><b>ค่ากลาง</b> = ค่ากลาง · <b>เกณฑ์สูง (P95)</b> = ค่าที่ 95% ของข้อมูลไม่เกิน · <b>ความต่างโดยทั่วไปจากค่าเฉลี่ย (SD)</b> = ความกระจายรอบค่าเฉลี่ย (คำนวณแบบตัวอย่าง n−1)</li></ul>
-   <h3>เลือกกราฟให้ตรงงาน</h3><ul><li><b>เปรียบเทียบ / สัดส่วนต่อหมวด</b> → กราฟแท่ง และแท่งซ้อน (ไม่ใช้พายหลายชิ้น)</li><li><b>การกระจาย</b> → ฮิสโตแกรมและบอกซ์พล็อต</li><li><b>ความสัมพันธ์</b> → กราฟกระจายพร้อมเส้นแนวโน้ม</li><li><b>ตามช่วงเวลา</b> → กราฟเส้น สรุปรายเดือน → ไตรมาส → ปีงบประมาณ</li><li><b>ตาราง</b> → ใช้เมื่อต้องอ่านตัวเลขละเอียด เรียง ค้นหา หรือคัดลอก</li><li>แกนตัวเลขทุกกราฟเริ่มที่ 0 และระบุไว้ที่ชื่อแกน</li></ul>
+   <h3>นิยามตัวชี้วัด</h3><ul><li><b>วงเงินอนุมัติสะสม</b> = ผลรวมวงเงินอนุมัติของโครงการ</li><li><b>ชำระคืนสะสม</b> = ผลรวมเงินต้นที่ชำระคืนแล้ว · <b>ร้อยละชำระคืน</b> = ชำระคืน ÷ อนุมัติ × 100</li><li><b>ยอดที่ยังไม่ได้คืน</b> = อนุมัติ − ชำระคืน (ต่อโครงการไม่ต่ำกว่า 0)</li><li><b>ยอดค้างชำระ</b> = ส่วนของยอดที่ยังไม่ได้คืนที่เลยกำหนดชำระ (ไม่เกินยอดที่ยังไม่ได้คืน)</li><li><b>ชำระตามกำหนด</b> = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน × 100</li><li><b>สถานะการชำระ</b>: ชำระตามกำหนด (ไม่มียอดค้าง) · ค้างชำระ 1–90 วัน · ค้างชำระเกิน 90 วัน (ตามจำนวนวันค้างชำระของโครงการ)</li><li><b>สถานะโครงการ</b>: ปิดโครงการ = ชำระครบ · ดำเนินโครงการอยู่ = สัญญายังไม่สิ้นสุด · ผิดนัดชำระ = สิ้นสุดสัญญาไม่เกิน 1 ปี · ไกล่เกลี่ย = 1–2 ปี · ดำเนินการฟ้อง = ตั้งแต่ 2 ปี (สามกลุ่มหลังต้องค้างเกิน 5% ของเงินต้น) · ค้างไม่เกิน 5% = สิ้นสุดสัญญาแล้วแต่ค้างไม่เกิน 5%</li><li><b>ระยะสัญญา</b> = วันสิ้นสุด − วันเริ่มสัญญา · กติกาของกองทุนให้ผ่อนชำระไม่เกิน 2 ปี</li><li><b>ปีงบประมาณ</b> เริ่ม 1 ตุลาคม สิ้นสุด 30 กันยายน (พ.ศ.) · ตัวกรองปีงบประมาณใช้ “ปีที่อนุมัติโครงการ”</li><li><b>ค่ากลาง</b> = ค่ากลาง · <b>ค่าสูง (95% ไม่เกินนี้)</b> = ค่าที่ 95% ของข้อมูลไม่เกิน · <b>ปกติห่างจากค่าเฉลี่ยราว</b> = ความกระจายรอบค่าเฉลี่ย (คำนวณแบบตัวอย่าง n−1)</li></ul>
+   <h3>เลือกกราฟให้ตรงงาน</h3><ul><li><b>เปรียบเทียบ / สัดส่วนต่อหมวด</b> → กราฟแท่ง และแท่งซ้อน (ไม่ใช้พายหลายชิ้น)</li><li><b>การกระจาย</b> → กราฟแท่งแสดงการกระจายและกราฟกล่อง</li><li><b>ความสัมพันธ์</b> → กราฟจุดพร้อมเส้นประบอกทิศทางโดยรวม</li><li><b>ตามช่วงเวลา</b> → กราฟเส้น สรุปรายเดือน → ไตรมาส → ปีงบประมาณ</li><li><b>ตาราง</b> → ใช้เมื่อต้องอ่านตัวเลขละเอียด เรียง ค้นหา หรือคัดลอก</li><li>แกนตัวเลขทุกกราฟเริ่มที่ 0 และระบุไว้ที่ชื่อแกน</li></ul>
    <h3>ข้อจำกัดที่ควรรู้</h3><ul><li>การคาดการณ์เป็นเส้นตรงจากข้อมูลที่มี เป็นเพียงประมาณการเบื้องต้น ไม่ใช่ค่ายืนยัน</li><li>ความสัมพันธ์ระหว่างตัวแปรไม่ได้พิสูจน์สาเหตุ</li><li>อำเภอหรือกิจกรรมที่มีโครงการน้อยจะมีตัวเลขแกว่งง่าย ควรดูจำนวนโครงการประกอบ</li><li>ปีงบประมาณล่าสุดอาจยังไม่ครบ 12 เดือน</li></ul></div>`)
   +card('dd','พจนานุกรมข้อมูล (Data Dictionary)','ตาราง','โครงสร้างไฟล์โครงการ — ใช้ชื่อคอลัมน์ภาษาไทยหรือชื่อฟิลด์ก็ได้','',`<div class="tscroll"><table class="t"><caption class="sr">พจนานุกรมข้อมูลไฟล์โครงการ</caption><thead><tr><th scope="col">ฟิลด์</th><th scope="col">ชื่อคอลัมน์</th><th scope="col">ชนิด</th><th scope="col">บังคับ</th><th scope="col">ตัวอย่าง</th><th scope="col">ความหมาย</th></tr></thead><tbody>${rows}</tbody></table></div><h3 style="margin:1rem 0 .3rem">ไฟล์รายการชำระคืน (ไม่บังคับ)</h3><div class="tscroll"><table class="t"><thead><tr><th scope="col">ฟิลด์</th><th scope="col">ชื่อคอลัมน์</th></tr></thead><tbody>${rows2}</tbody></table></div><p class="stats">ใช้ทำกราฟชำระคืนรายเดือน ต้องมี “เลขที่โครงการ” ตรงกับไฟล์โครงการ</p>`);
 };
-const _help=V.help;V.help=function(){return _help()+`<section class="card" id="gloss"><header><div><h2>คำที่พบบ่อย</h2><p>อธิบายตัวเลขที่ใช้ในกราฟด้วยภาษาง่าย ๆ</p></div></header><dl class="dl"><dt>ค่าเฉลี่ย</dt><dd>เอาทุกโครงการมารวมกันแล้วหารด้วยจำนวนโครงการ</dd><dt>ค่ากลาง (มัธยฐาน)</dt><dd>ค่าของโครงการที่อยู่ตรงกลางเมื่อเรียงจากน้อยไปมาก ไม่ถูกโครงการที่สูงหรือต่ำมากดึงไป</dd><dt>เกณฑ์สูง (P95)</dt><dd>ค่าที่ 95 ใน 100 โครงการไม่เกิน เหลือเพียง 5 โครงการที่สูงกว่านี้</dd><dt>ความต่างจากค่าเฉลี่ยโดยทั่วไป (SD)</dt><dd>ยิ่งมาก แปลว่าแต่ละโครงการต่างกันมาก ยิ่งน้อย แปลว่าใกล้เคียงกัน</dd><dt>กล่องในกราฟกล่อง</dt><dd>กล่องคือครึ่งกลางของโครงการ ขีดหนาคือค่ากลาง จุดห่างออกไปคือโครงการที่ต่างจากกลุ่มมาก</dd><dt>ค่าความสัมพันธ์ (r)</dt><dd>อยู่ระหว่าง −1 ถึง 1 ยิ่งใกล้ 1 แปลว่าสองอย่างเพิ่มไปด้วยกัน ใกล้ 0 แปลว่าแทบไม่เกี่ยวกัน (ไม่ได้บอกว่าอย่างหนึ่งเป็นสาเหตุของอีกอย่าง)</dd><dt>ยอดที่ยังไม่ได้คืน</dt><dd>วงเงินอนุมัติ ลบด้วยเงินต้นที่รับคืนแล้ว</dd></dl></section>`+`<section class="card" id="quality" aria-labelledby="q-h"><header><div><h2 id="q-h">คุณภาพข้อมูล</h2><p>ผลตรวจข้อมูลที่ใช้ในแดชบอร์ดนี้ (ตรวจอัตโนมัติตอนเปิดหน้าเว็บ)</p></div></header>${qualityHtml()}</section>`};
+const _help=V.help;V.help=function(){return _help()+`<section class="card" id="gloss"><header><div><h2>คำที่พบบ่อย</h2><p>อธิบายตัวเลขที่ใช้ในกราฟด้วยภาษาง่าย ๆ</p></div></header><dl class="dl"><dt>ค่าเฉลี่ย</dt><dd>เอาทุกโครงการมารวมกันแล้วหารด้วยจำนวนโครงการ</dd><dt>ค่ากลาง (มัธยฐาน)</dt><dd>ค่าของโครงการที่อยู่ตรงกลางเมื่อเรียงจากน้อยไปมาก ไม่ถูกโครงการที่สูงหรือต่ำมากดึงไป</dd><dt>ค่าสูง (95% ไม่เกินนี้)</dt><dd>ค่าที่ 95 ใน 100 โครงการไม่เกิน เหลือเพียง 5 โครงการที่สูงกว่านี้</dd><dt>ห่างจากค่าเฉลี่ยโดยทั่วไป</dt><dd>ยิ่งมาก แปลว่าแต่ละโครงการต่างกันมาก ยิ่งน้อย แปลว่าใกล้เคียงกัน</dd><dt>กล่องในกราฟกล่อง</dt><dd>กล่องคือครึ่งกลางของโครงการ ขีดหนาคือค่ากลาง จุดห่างออกไปคือโครงการที่ต่างจากกลุ่มมาก</dd><dt>ค่าความสัมพันธ์ (r)</dt><dd>อยู่ระหว่าง −1 ถึง 1 ยิ่งใกล้ 1 แปลว่าสองอย่างเพิ่มไปด้วยกัน ใกล้ 0 แปลว่าแทบไม่เกี่ยวกัน (ไม่ได้บอกว่าอย่างหนึ่งเป็นสาเหตุของอีกอย่าง)</dd><dt>ยอดที่ยังไม่ได้คืน</dt><dd>วงเงินอนุมัติ ลบด้วยเงินต้นที่รับคืนแล้ว</dd></dl></section>`+`<section class="card" id="quality" aria-labelledby="q-h"><header><div><h2 id="q-h">คุณภาพข้อมูล</h2><p>ผลตรวจข้อมูลที่ใช้ในแดชบอร์ดนี้ (ตรวจอัตโนมัติตอนเปิดหน้าเว็บ)</p></div></header>${qualityHtml()}</section>`};
 
 
 /* ---------- ที่มาของตัวเลข ---------- */
@@ -1843,7 +1935,7 @@ V.about=function(){
   const ASOF=iso(FD.ASOF_ISO),top=R.filter(r=>r.ov>0).sort((a,b)=>b.ov-a.ov)[0];
   const row=(a,b,c)=>`<tr><th scope="row">${a}</th><td>${b}</td><td class="n">${c}</td></tr>`;
   const bahtN=v=>FD.f0(Math.round(v))+' บาท';
-  const t1=card('ab1','ข้อมูลที่ใช้','','','',`<dl class="dl"><dt>ไฟล์ต้นทาง</dt><dd>${esc(ST.meta.source||'ไม่ระบุ')}</dd><dt>ข้อมูล ณ วันที่</dt><dd>${esc(ST.meta.asOf||'ไม่ระบุ')}</dd><dt>จำนวนทั้งหมด</dt><dd>${FD.f0(R.length)} สัญญา จาก ${nd} อำเภอ</dd>${d0?`<dt>วันเริ่มสัญญา</dt><dd>${thd(iso(d0))} ถึง ${thd(iso(d1))}</dd>`:''}</dl>`);
+  const t1=card('ab1','ข้อมูลที่ใช้','','','',`<dl class="dl"><dt>ไฟล์ต้นทาง</dt><dd>${esc(ST.meta.source||'ไม่ระบุ')}</dd><dt>ข้อมูล ณ วันที่</dt><dd>${esc(ST.meta.asOf||'ไม่ระบุ')}</dd>${ST.meta.payUntil?`<dt>รับชำระคืนถึงวันที่</dt><dd>${esc(ST.meta.payUntil)} (ยอดชำระคืนในไฟล์นับถึงวันนี้ ส่วนสถานะโครงการคิดถึง ${esc(ST.meta.asOf||'-')})</dd>`:''}<dt>จำนวนทั้งหมด</dt><dd>${FD.f0(R.length)} สัญญา จาก ${nd} อำเภอ</dd>${d0?`<dt>วันเริ่มสัญญา</dt><dd>${thd(iso(d0))} ถึง ${thd(iso(d1))}</dd>`:''}</dl>`);
   const t2=card('ab2','ตัวเลขแต่ละตัวคิดอย่างไร','ตาราง','ค่าในตารางคือผลรวมทั้งจังหวัด ไม่ขึ้นกับตัวกรอง','',`<div class="tscroll"><table class="t about"><caption class="sr">วิธีคิดตัวเลขสำคัญ</caption><thead><tr><th scope="col">ตัวเลข</th><th scope="col">คิดจาก</th><th scope="col" class="n">ค่าตอนนี้</th></tr></thead><tbody>`
     +row('วงเงินอนุมัติสะสม','รวมวงเงินที่อนุมัติของทุกโครงการ',bahtN(A.disb))
     +row('ชำระคืนสะสม','รวมเงินต้นที่ชำระคืนแล้ว (ไม่รวมดอกเบี้ยและค่าปรับ)',bahtN(A.repaid))
@@ -1858,7 +1950,7 @@ V.about=function(){
     +`</tbody></table></div>`);
   const ex=top?(()=>{const end=new Date(ASOF.getTime()-top.odays*86400000);return card('ab3','ตัวอย่างคิดจากโครงการจริง','','โครงการที่มียอดค้างชำระมากที่สุด','',`<p><b>${esc(top.group)}</b> (${esc(top.district)}${top.sub?' / '+esc(top.sub):''})</p><ol class="steps"><li>อนุมัติ <b>${bahtN(top.disb)}</b> ชำระคืนแล้ว <b>${bahtN(top.repaid)}</b></li><li>ยังไม่ได้คืน = ${FD.f0(top.disb)} − ${FD.f0(top.repaid)} = <b>${bahtN(top.outst)}</b></li><li>สัญญาสิ้นสุดประมาณ <b>${thd(end)}</b> ซึ่งผ่านมาแล้ว จึงนับเป็นยอดค้างชำระ <b>${bahtN(top.ov)}</b></li><li>ค้างมาแล้ว <b>${FD.f0(top.odays)} วัน</b> จึงอยู่ในสถานะ “${esc(FD.BK[top.bucket].label)}”</li></ol>`)})():'';
   const li=[
-   `<li><b>ยอดค้างชำระอาจสูงกว่าความจริง</b> ไฟล์ไม่มีตารางงวดผ่อนชำระ จึงนับทั้งก้อนเมื่อสัญญาครบกำหนด หากมีการผ่อนผันหรือขยายเวลา ยอดจริงจะน้อยกว่านี้</li>`,
+   `<li><b>ยอดค้างชำระอาจสูงกว่าความจริง</b> ไฟล์ไม่มีตารางงวดผ่อนชำระ จึงนับทั้งก้อนเมื่อสัญญาครบกำหนด หากมีการผ่อนผันหรือขยายเวลา ยอดจริงจะน้อยกว่านี้${ST.meta.payUntil?` และยอดรับชำระในไฟล์นับถึง ${esc(ST.meta.payUntil)} จึงยังไม่รวมเงินที่อาจชำระเข้ามาหลังจากนั้น`:''}</li>`,
    `<li><b>ปีงบประมาณกับวันเริ่มสัญญาไม่ตรงกัน ${FD.f0(fyMis)} จาก ${FD.f0(R.length)} สัญญา</b> กราฟรายเดือนและรายไตรมาสนับตามวันเริ่มสัญญา ส่วนกราฟรายปีงบนับตามปีงบประมาณที่ระบุในไฟล์ ตัวเลขสองแบบจึงไม่เท่ากัน</li>`,
    (()=>{const p=[];if(noRep)p.push(FD.f0(noRep)+' สัญญาไม่มีข้อมูลชำระคืน (นับเป็น 0 บาท)');if(over100)p.push(FD.f0(over100)+' สัญญาชำระคืนมากกว่าที่อนุมัติ (นับยอดที่ยังไม่ได้คืนเป็น 0)');if(noMem)p.push(FD.f0(noMem)+' สัญญาไม่ระบุจำนวนสมาชิก (ไม่นำไปคิดเฉลี่ยต่อคน)');return p.length?`<li><b>ข้อมูลที่ขาดหรือผิดปกติ</b> ${p.join(' · ')}</li>`:`<li><b>ข้อมูลครบถ้วน</b> ทุกสัญญามีข้อมูลชำระคืนและจำนวนสมาชิก</li>`})(),
    `<li><b>ใช้เฉพาะเงินต้น</b> ไม่รวมดอกเบี้ยและค่าปรับ</li>`,
@@ -1877,7 +1969,7 @@ V.about=function(){
    return card('abr','ตรวจข้อมูลตามกติกาของกองทุน','ตาราง','เทียบข้อมูลในไฟล์กับเงื่อนไขของเงินทุนหมุนเวียน','',
    `<div class="warnline"><b>ข้อสังเกตสำคัญ:</b> กติกาให้ผ่อนชำระไม่เกิน 2 ปี แต่ข้อมูลมี <b>${FD.f0(ov.length)} จาก ${FD.f0(TR.length)} สัญญา (${FD.pct(TR.length?ov.length/TR.length*100:0)})</b> ที่ระยะสัญญาเกิน 2 ปี${mx?` ยาวที่สุด ${FD.f1(mx)} ปี`:''} (เกิน 5 ปี ${FD.f0(gt5)} สัญญา · เกิน 10 ปี ${FD.f0(gt10)} สัญญา) แดชบอร์ดแสดงตามที่บันทึกในไฟล์ ไม่แก้ตัวเลข เพราะจากข้อมูลนี้บอกไม่ได้ว่ามีการขยายเวลาหรือทำสัญญาใหม่หรือไม่ ควรตรวจกับเอกสารสัญญา</div><div class="tscroll"><table class="t about"><caption class="sr">เทียบข้อมูลกับกติกาของกองทุน</caption><thead><tr><th scope="col">กติกา</th><th scope="col">ในข้อมูล</th><th scope="col">ผล</th><th scope="col">หมายเหตุ</th></tr></thead><tbody>`
    +rw('วงเงินไม่เกิน 200,000 บาท ต่อโครงการ','สูงสุด '+FD.f0(mxA)+' บาท · เกินวงเงิน '+FD.f0(big)+' สัญญา',st(big===0,big===0?'ตามกติกา':'เกินกติกา'),'–')
-   +rw('ผ่อนชำระไม่เกิน 2 ปี',FD.f0(ov.length)+' จาก '+FD.f0(TR.length)+' สัญญาเกิน 2 ปี',st(!ov.length,ov.length?'ไม่ตรงกติกา':'ตามกติกา'),'นับจากวันเริ่มถึงวันสิ้นสุดสัญญาที่บันทึก')
+   +rw('ผ่อนชำระไม่เกิน 2 ปี',FD.f0(ov.length)+' จาก '+FD.f0(TR.length)+' สัญญาเกิน 2 ปี',st(!ov.length,ov.length?'ไม่ตรงกติกา':'ตามกติกา'),'นับจากวันเริ่มถึงวันสิ้นสุดสัญญาที่บันทึก'+(TR.filter(r=>r.termOver&&r.termY<2.05).length?' (รวม '+FD.f0(TR.filter(r=>r.termOver&&r.termY<2.05).length)+' สัญญาที่เกินเพียงไม่กี่วัน)':''))
    +rw('ดอกเบี้ย 0.10% ต่อปี',FD.f0(crOk)+' จาก '+FD.f0(cr.length)+' สัญญาตรงตามนี้',st(crAll,crAll?'ตามกติกา':'ไม่ตรงกติกา'),'–')
    +rw('ดอกเบี้ยผิดนัด 3% ต่อปี (คิดรายวันจากเงินต้น ตั้งแต่วันเริ่มผิดนัด)',dr.length?'ไฟล์ระบุ '+drVals.map(v=>FD.f1(v)+'%').join(', ')+' · ตรง 3% '+FD.f0(drOk)+' สัญญา':'ไม่มีข้อมูล',st(drAll,drAll?'ตามกติกา':'ไม่ตรงกติกา'),'แดชบอร์ดไม่คิดดอกเบี้ยผิดนัดเอง ใช้เงินต้นเท่านั้น')
    +rw('ชำระคืนอย่างน้อยปีละ 2 งวด','ไม่มีตารางงวดผ่อนชำระในไฟล์',st(false,'ตรวจไม่ได้'),'ตรวจได้เมื่อมีรายการชำระคืนรายงวด')
@@ -1918,7 +2010,7 @@ function renderHead(){
   const exp=FILTERED_VIEWS.includes(v)?`<div class="menu"><button class="btn primary" type="button" data-act="menu" aria-haspopup="menu" aria-expanded="${ST.ui.openMenu}">${ICON('download')} ส่งออกรายงาน</button><div class="pop" role="menu" ${ST.ui.openMenu?'':'hidden'}>
    <button role="menuitem" type="button" data-act="export" data-v="csv">${ICON('file')}<b>CSV</b><small>ข้อมูลตามตัวกรอง (${FD.f0(n)} โครงการ)</small></button>
    <button role="menuitem" type="button" data-act="export" data-v="xlsx">${ICON('file')}<b>Excel (.xlsx)</b><small>สรุป KPI · โครงการ · รายอำเภอ</small></button>
-   <button role="menuitem" type="button" data-act="pdfdl">${ICON('file')}<b>PDF สรุป 2 หน้า</b><small>ดาวน์โหลดทันที ตามตัวกรอง</small></button>
+   <button role="menuitem" type="button" data-act="pdfdl">${ICON('file')}<b>PDF สรุป 3 หน้า</b><small>ดาวน์โหลดทันที ตามตัวกรอง</small></button>
    <button role="menuitem" type="button" data-act="pdf" data-v="">${ICON('file')}<b>พิมพ์หน้านี้</b><small>เปิดหน้าต่างพิมพ์ แล้วบันทึกเป็น PDF</small></button></div></div>`:'';
   $('#pagehead').innerHTML=`<div><h1 id="h1" tabindex="-1">${esc(title)}</h1><p class="sub">${esc(t[2])}</p></div><div class="headright"><div class="row"><span class="badge ${badge[0]}">${badge[1]}</span>${FILTERED_VIEWS.includes(v)?`<button class="btn" type="button" data-act="wsn" aria-pressed="${ST.ui.wsn}">${ST.ui.wsn?'ซ่อน':'แสดง'}คำอธิบายกราฟ</button>`:''}${exp}</div><p class="asof">${ST.meta.asOf?'วันที่ข้อมูล '+esc(ST.meta.asOf):'ไม่ระบุวันที่ของข้อมูล'}</p></div>`;
   $('#printHead').innerHTML=`<p style="font-size:16pt;font-weight:700;margin:0">${esc(ST.meta.title||'')} — ${esc(title)}</p><p>${esc(ST.meta.agency||'')} · ขอบเขต: ${esc(H.scopeText())} · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})}${ST.source==='test'?' · ข้อมูลทดสอบ ไม่ใช่ข้อมูลจริง':''}</p>`;
@@ -1965,7 +2057,7 @@ const SH=['อำเภอ','จำนวนโครงการ','วงเง
 const srow=x=>{const g=x.s||{},r2=v=>v==null||!isFinite(v)?'':+(+v).toFixed(2);return[x.label,x.n,x.sum,r2(g.mean),r2(g.med),r2(g.std),r2(g.min),r2(g.q1),r2(g.q3),r2(g.max),x.mem==null?'':+x.mem.toFixed(2),x.rate==null?'':+x.rate.toFixed(2)]};
 const QH=['เลขที่โครงการ','วันที่ชำระคืน','จำนวนเงิน (บาท)','อำเภอ','ชื่อกลุ่ม/โครงการ'];
 function exportData(kind){
-  if(!ST.sel.length){toast('ไม่มีข้อมูลให้ส่งออก ลองล้างตัวกรองหรือนำเข้าข้อมูลก่อน');return}
+  if(!ST.sel.length){toast(ST.rows.length?'ไม่มีข้อมูลให้ส่งออก ลองล้างตัวกรองก่อน':'ไม่มีข้อมูลให้ส่งออก');return}
   const byId=new Map(ST.rows.map(r=>[r.pid,r])),dist=byDistrict(ST.sel).filter(x=>x.rows.length),A=ST.agg;
   const prows=ST.sel.map(prow),drows=dist.map(drow),srows=H.distStatRows(dist).map(srow),qrows=ST.selPay.map(p=>{const r=byId.get(p.pid);return[p.pid,dmy(p.date),p.amount,r?r.district:'',r?r.group:'']});
   try{
