@@ -487,6 +487,11 @@ ul.notes{display:grid;gap:.7rem;padding-left:1.2rem}
 @media (max-width:560px){.headright .row .btn{padding-inline:.5rem;font-size:.9rem;white-space:nowrap}}
 @media (min-width:361px) and (max-width:640px){.hero .cover b{white-space:nowrap;font-size:1.1rem}}
 
+/* ตารางสถิติรายอำเภอ: หน่วยใต้หัวคอลัมน์ */
+table.t th .u{display:block;font-weight:400;font-size:.82em;color:var(--muted);line-height:1.25}
+table.t th.n{text-align:right}
+table.t tfoot tr.tot td{font-weight:700}
+
 </style>
 </head>
 <body>
@@ -566,7 +571,7 @@ ul.notes{display:grid;gap:.7rem;padding-left:1.2rem}
    <div class="chips" id="chips" hidden></div>
    <div id="view" style="display:grid;gap:1.25rem;min-width:0"></div>
   </main>
-  <footer class="foot">กรมการพัฒนาชุมชน กระทรวงมหาดไทย · แสดงตัวเลขตามข้อมูลที่นำเข้า ไม่ใช่เอกสารรับรองทางราชการ</footer>
+  <footer class="foot">กรมการพัฒนาชุมชน กระทรวงมหาดไทย</footer>
  </div>
 </div>
 <dialog id="dlg" aria-labelledby="dlg-t"><div class="dh"><h2 id="dlg-t" style="font-size:1.2rem"></h2><button class="iconbtn" type="button" data-act="closedlg" aria-label="ปิดหน้าต่าง"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div><div class="db" id="dlg-b"></div></dialog>
@@ -814,11 +819,21 @@ const tickLabels=(max,step)=>{const a=[];for(let v=0;v<=max+step/1e6;v+=step)a.p
 const trim=v=>FD.f0(+v.toFixed(6)).replace(/\.0+$/,'');
 const num=(v,div)=>{const x=v/div;const s=new Intl.NumberFormat('th-TH',{maximumFractionDigits:2}).format(x);return s};
 function ell(s,max){s=String(s);return s.length>max?s.slice(0,Math.max(1,max-1))+'…':s}
-function lbl(x,cy,label,labW,size){label=String(label);const mx=Math.max(4,Math.floor(labW/fz(8.2))),t=(y,v)=>`<text x="${x}" y="${y}" font-size="${size}" text-anchor="end">${esc(ell(v,mx))}</text>`;
-  if(label.length<=mx)return t(cy+fz(5),label);
-  let a,b;const i=label.indexOf('/');
-  if(i>0&&i<label.length-1){a=label.slice(0,i+1);b=label.slice(i+1)}else{const sp=label.lastIndexOf(' ',mx);if(sp>0){a=label.slice(0,sp);b=label.slice(sp+1)}else{a=label.slice(0,mx);b=label.slice(mx)}}
-  return t(cy-fz(2),a)+t(cy+fz(13),b)}
+/* วัดความกว้างข้อความจริงด้วย canvas (ใช้ฟอนต์เดียวกับหน้าเว็บ) */
+const _cx=(()=>{try{return document.createElement('canvas').getContext('2d')}catch(e){return null}})();
+const tw=(t,size,wt)=>{t=String(t);if(!_cx)return t.length*size*.6;_cx.font=(wt||400)+' '+size+'px '+(getComputedStyle(document.body).fontFamily||'sans-serif');return _cx.measureText(t).width*1.04};
+/* ตัดคำไทยตามขอบเขตคำ (ไม่ตัดกลางคำ) */
+const SEG=(()=>{try{return new Intl.Segmenter('th',{granularity:'word'})}catch(e){return null}})();
+const words=s=>SEG?[...SEG.segment(s)].map(x=>x.segment):String(s).split(/(?<=[ /])/);
+function fitText(s,maxW,size){s=String(s);if(tw(s,size)<=maxW)return s;let lo=1,hi=s.length;while(lo<hi){const m=Math.ceil((lo+hi)/2);if(tw(s.slice(0,m)+'…',size)<=maxW)lo=m;else hi=m-1}return s.slice(0,lo).trimEnd()+'…'}
+function split2(label,maxW,size){label=String(label);if(tw(label,size)<=maxW)return[label];
+  const ws=words(label);let best=null,bw=1e9,acc='';
+  for(let i=0;i<ws.length-1;i++){acc+=ws[i];const a=acc.trimEnd(),b=label.slice(acc.length).trimStart();if(!a||!b)continue;
+    const wa=tw(a,size);if(wa>maxW)break;const m=Math.max(wa,tw(b,size)),slash=a.endsWith('/')?-1e6:0;if(m+slash<bw){bw=m+slash;best=[a,b]}}
+  if(!best)return[fitText(label,maxW,size)];
+  return[best[0],fitText(best[1],maxW,size)]}
+function lbl(x,cy,label,labW,size){const W=Math.max(20,labW-2),L=split2(label,W,size),t=(y,v)=>`<text x="${x}" y="${y}" font-size="${size}" text-anchor="end">${esc(v)}</text>`;
+  return L.length===1?t(cy+fz(5),L[0]):t(cy-fz(4),L[0])+t(cy+fz(14),L[1])}
 const NODATA=(c,msg)=>{c.innerHTML=`<div class="nodata" role="status"><div><b>${esc(msg||'ยังไม่มีข้อมูลสำหรับกราฟนี้')}</b><br><span>เมื่อนำเข้าข้อมูลหรือเปลี่ยนตัวกรอง กราฟจะแสดงที่นี่</span></div></div>`};
 FD.nodata=NODATA;
 
@@ -839,14 +854,14 @@ FD.tipRow=(label,val,color)=>`<div class="r"><span>${color?`<i class="sw" style=
 FD.hbar=function(c,items,o){o=o||{};
   if(!items.length||items.every(i=>!i.value&&!i.empty&&i.value!==0)){return NODATA(c)}
   const W=W_(c,o),rowH=fz(36),barH=fz(20),padT=6,padB=fz(46);
-  const labW=Math.min(fz(168),W*.34),padR=fz(96),padL=labW+8;
+  const labW=Math.min(fz(168),W*.34),vl=it=>{const t=String(it.valText!=null?it.valText:trim(it.value||0));return tw(t,fz(14),600)>W*.3&&t.includes(' · ')?t.split(' · '):[t]},padR=Math.min(W*.4,Math.max(fz(96),Math.ceil(Math.max(0,...items.map(i=>Math.max(...vl(i).map(t=>tw(t,fz(14),600)))))))+14),padL=labW+8;
   const maxV=o.max!=null?o.max:Math.max(0,...items.map(i=>i.value||0));
   const {max,step}=o.max!=null?{max:o.max,step:o.step||o.max/4}:scaleMax(maxV,4);
   const H=padT+items.length*rowH+padB,pw=W-padL-padR,x=v=>padL+pw*(v/max);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'แผนภูมิแท่ง')}">`;
-  tickLabels(max,step).forEach(t=>{const X=x(t);s+=`<line class="gl" x1="${X}" x2="${X}" y1="${padT}" y2="${H-padB}"/><text class="ax" x="${X}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(t):trim(t))}</text>`});
+  tickLabels(max,step).forEach(t=>{const X=x(t);s+=`<line class="gl" x1="${X}" x2="${X}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-xt="1" x="${X}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(t):trim(t))}</text>`});
   s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/>`;
-  s+=`<text class="ax" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axTitle||'')}${o.axTitle?' · แกนเริ่มที่ 0':''}</text>`;
+  s+=`<text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axTitle||'')}${o.axTitle?' · แกนเริ่มที่ 0':''}</text>`;
   items.forEach((it,i)=>{const y=padT+i*rowH+(rowH-barH)/2,v=it.value||0,w=Math.max(0,x(v)-padL),col=it.color||o.color||'#2F6DB5';
     const tipH=it.tip?` data-tip="${tipA(it.tip)}"`:'',cl=it.click?' class="click" tabindex="0" role="link"':' tabindex="0" role="img"';
     s+=`<g${cl}${tipH} data-key="${esc(it.key||'')}" aria-label="${esc(it.label+': '+(it.valText||v))}">`;
@@ -854,7 +869,7 @@ FD.hbar=function(c,items,o){o=o||{};
     s+=lbl(padL-8,y+barH/2,it.label,labW,fz(14.5));
     if(it.empty)s+=`<text class="ax" x="${padL+8}" y="${y+barH/2+fz(5)}" font-size="${fz(13)}">ไม่มีข้อมูล</text>`;
     else{s+=`<rect x="${padL}" y="${y}" width="${w}" height="${barH}" rx="4" fill="${col}"/>`;
-      s+=`<text x="${padL+w+8}" y="${y+barH/2+fz(5)}" font-size="${fz(14)}" font-weight="600">${esc(it.valText||trim(v))}</text>`}
+      {const L=vl(it);s+=L.length===1?`<text x="${padL+w+8}" y="${y+barH/2+fz(5)}" font-size="${fz(14)}" font-weight="600">${esc(L[0])}</text>`:`<text x="${padL+w+8}" y="${y+barH/2-fz(3)}" font-size="${fz(14)}" font-weight="600">${esc(L[0])}</text><text x="${padL+w+8}" y="${y+barH/2+fz(14)}" font-size="${fz(13)}" font-weight="600">${esc(L.slice(1).join(' · '))}</text>`}}
     s+='</g>'});
   c.innerHTML=s+'</svg>';
 };
@@ -866,8 +881,8 @@ FD.stack=function(c,rows,parts,o){o=o||{};
   const maxT=pct?100:Math.max(...rows.map(r=>r.total));const {max,step}=pct?{max:100,step:25}:scaleMax(maxT,4);
   const H=padT+rows.length*rowH+padB,pw=W-padL-padR,x=v=>padL+pw*(v/max),id='h'+Math.random().toString(36).slice(2,7);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'แผนภูมิแท่งซ้อน')}"><defs>${parts.map((p,i)=>p.hatch?`<pattern id="${id}${i}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="${p.color}"/><rect width="3" height="7" fill="rgba(255,255,255,.55)"/></pattern>`:'').join('')}</defs>`;
-  tickLabels(max,step).forEach(t=>{const X=x(t);s+=`<line class="gl" x1="${X}" x2="${X}" y1="${padT}" y2="${H-padB}"/><text class="ax" x="${X}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(pct?t+'%':(o.axFmt?o.axFmt(t):trim(+(t/(o.div||1)).toFixed(2))))}</text>`});
-  s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/><text class="ax" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axTitle||'')}${o.axTitle?' · แกนเริ่มที่ 0':''}</text>`;
+  tickLabels(max,step).forEach(t=>{const X=x(t);s+=`<line class="gl" x1="${X}" x2="${X}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-xt="1" x="${X}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(pct?t+'%':(o.axFmt?o.axFmt(t):trim(+(t/(o.div||1)).toFixed(2))))}</text>`});
+  s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axTitle||'')}${o.axTitle?' · แกนเริ่มที่ 0':''}</text>`;
   rows.forEach((r,i)=>{const y=padT+i*rowH+(rowH-barH)/2;let acc=0;
     const cl=r.click?' class="click" tabindex="0" role="link"':' tabindex="0" role="img"';
     const lab=r.label+': '+parts.map((p,k)=>p.label+' '+(o.valFmt?o.valFmt(r.vals[k]):r.vals[k])).join(', ');
@@ -893,11 +908,11 @@ FD.line=function(c,spec){const o=spec;const L=spec.labels,ser=spec.series.filter
   const {max,step}=scaleMax(maxV,4),pw=W-padL-padR,ph=H-padT-padB;
   const X=i=>padL+(N===1?pw/2:pw*i/(N-1)),Y=v=>padT+ph*(1-v/max);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'กราฟเส้น')}">`;
-  tickLabels(max,step).forEach(t=>{const y=Y(t);s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}"/><text class="ax" x="${padL-8}" y="${y+fz(4.5)}" font-size="${fz(13)}" text-anchor="end">${esc(num(t,div))}</text>`});
+  tickLabels(max,step).forEach(t=>{const y=Y(t);s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}"/><text class="ax" x="${padL-8}" y="${y+(t===0?fz(1):fz(4.5))}" font-size="${fz(13)}" text-anchor="end">${esc(num(t,div))}</text>`});
   s+=`<line class="axl" x1="${padL}" x2="${W-padR}" y1="${Y(0)}" y2="${Y(0)}"/>`;
   const every=Math.max(1,Math.ceil(N/Math.floor(pw/fz(64))));
-  for(let i=0;i<N;i++){if(i%every===0||i===N-1&&(N-1)%every===0){const lab=i<L.length?L[i]:o.nextLabel;s+=`<text class="ax" x="${X(i)}" y="${H-padB+fz(20)}" font-size="${fz(13)}" text-anchor="middle">${esc(lab)}${i>=L.length?'*':''}</text>`}}
-  s+=`<text class="ax" x="${padL}" y="${H-fz(6)}" font-size="${fz(12.5)}">${esc(o.yTitle||'')} · แกนตั้งเริ่มที่ 0${nF?' · * = คาดการณ์':''}</text>`;
+  for(let i=0;i<N;i++){if(i%every===0||i===N-1&&(N-1)%every===0){const lab=i<L.length?L[i]:o.nextLabel;s+=`<text class="ax" data-xt="1" x="${X(i)}" y="${H-padB+fz(20)}" font-size="${fz(13)}" text-anchor="middle">${esc(lab)}${i>=L.length?'*':''}</text>`}}
+  s+=`<text class="ax" data-title="1" x="${padL}" y="${H-fz(6)}" font-size="${fz(12.5)}">${esc(o.yTitle||'')} · แกนตั้งเริ่มที่ 0${nF?' · * = คาดการณ์':''}</text>`;
   ser.forEach((se,k)=>{
     const pts=se.values.map((v,i)=>v==null?null:[X(i),Y(v)]);
     if(k===0&&ser.length>=1&&o.area!==false){const d=pts.filter(Boolean);if(d.length>1)s+=`<path d="M${d[0][0]},${Y(0)} L${d.map(p=>p.join(',')).join(' L')} L${d[d.length-1][0]},${Y(0)}Z" fill="${se.color}" opacity=".08"/>`}
@@ -929,15 +944,15 @@ FD.hist=function(c,values,o){o=o||{};values=values.filter(v=>v!=null&&isFinite(v
   values.forEach(v=>{let i=Math.floor((v-lo)/stepB);if(i>=nb)i=nb-1;if(i<0)i=0;bins[i]++});
   const {max,step}=scaleMax(Math.max(...bins),4),pw=W-padL-padR,ph=H-padT-padB,X=v=>padL+pw*(v-lo)/(hi-lo),Y=v=>padT+ph*(1-v/max);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'ฮิสโตแกรม')}">`;
-  tickLabels(max,step).forEach(t=>{s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${padL-8}" y="${Y(t)+fz(4.5)}" font-size="${fz(13)}" text-anchor="end">${trim(t)}</text>`});
+  tickLabels(max,step).forEach(t=>{s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${padL-8}" y="${Y(t)+(t===0?fz(1):fz(4.5))}" font-size="${fz(13)}" text-anchor="end">${trim(t)}</text>`});
   bins.forEach((n,i)=>{const x0=X(lo+i*stepB),w=X(lo+(i+1)*stepB)-x0,a=lo+i*stepB,b=a+stepB;
     s+=`<rect tabindex="0" role="img" aria-label="ช่วง ${esc(o.fmt(a))} ถึง ${esc(o.fmt(b))}: ${n} รายการ" data-tip="${esc('<b>'+o.fmt(a)+' – '+o.fmt(b)+'</b>'+FD.tipRow('จำนวน',n+' '+(o.unitN||'รายการ'),o.color||'#2F6DB5'))}" x="${x0+1}" y="${Y(n)}" width="${Math.max(w-2,1)}" height="${Y(0)-Y(n)}" rx="3" fill="${o.color||'#2F6DB5'}"/>`;
     if(n>0&&Y(0)-Y(n)>fz(18))s+=`<text x="${x0+w/2}" y="${Y(n)+fz(15)}" font-size="${fz(12.5)}" text-anchor="middle" style="fill:#fff" font-weight="600">${n}</text>`});
   s+=`<line class="axl" x1="${padL}" x2="${W-padR}" y1="${Y(0)}" y2="${Y(0)}"/>`;
   const ev=Math.max(1,Math.ceil((nb+1)/Math.floor(pw/fz(70))));
-  for(let i=0;i<=nb;i++)if(i%ev===0)s+=`<text class="ax" x="${X(lo+i*stepB)}" y="${H-padB+fz(18)}" font-size="${fz(12.5)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(lo+i*stepB):o.fmt(lo+i*stepB))}</text>`;
-  s+=`<text class="ax" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · จำนวน (${esc(o.unitN||'รายการ')}) เริ่มที่ 0</text>`;
-  [['mean',st.mean,'#D25D72','0'],['med',st.med,'#17794F','6 4'],['p95',st.p95,'#7C6BC2','2 4']].forEach(m=>{const xx=X(Math.min(hi,Math.max(lo,m[1])));s+=`<line x1="${xx}" x2="${xx}" y1="${padT}" y2="${Y(0)}" stroke="${m[2]}" stroke-width="2.4" ${m[3]!=='0'?`stroke-dasharray="${m[3]}"`:''}/>`});
+  for(let i=0;i<=nb;i++)if(i%ev===0)s+=`<text class="ax" data-xt="1" x="${X(lo+i*stepB)}" y="${H-padB+fz(18)}" font-size="${fz(12.5)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(lo+i*stepB):o.fmt(lo+i*stepB))}</text>`;
+  s+=`<text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · จำนวน (${esc(o.unitN||'รายการ')}) เริ่มที่ 0</text>`;
+  [['mean',st.mean,'#D25D72','0'],['med',st.med,'#17794F','6 4'],['p95',st.p95,'#7C6BC2','2 4']].forEach(m=>{const xx=X(Math.min(hi,Math.max(lo,m[1])));s+=`<line style="pointer-events:none" x1="${xx}" x2="${xx}" y1="${padT}" y2="${Y(0)}" stroke="${m[2]}" stroke-width="2.4" ${m[3]!=='0'?`stroke-dasharray="${m[3]}"`:''}/>`});
   c.innerHTML=s+'</svg>';
   return st;
 };
@@ -946,14 +961,14 @@ FD.histLegend=()=>`<div class="legend" aria-label="เส้นอ้างอ�
 /* ---------- box plot (horizontal) ---------- */
 FD.box=function(c,groups,o){o=o||{};groups=groups.filter(g=>g.values.length>0);
   if(!groups.length)return NODATA(c);
-  const W=W_(c,o),rowH=fz(46),padT=6,padB=fz(46),labW=Math.min(fz(170),W*.3),padL=labW+8,padR=fz(86),H=padT+groups.length*rowH+padB,pw=W-padL-padR;
+  const W=W_(c,o),rowH=fz(46),padT=6,padB=fz(46),labW=Math.min(fz(170),W*.3),padL=labW+8,padR=Math.max(fz(86),Math.ceil(tw('000 โครงการ',fz(12.5)))+12),H=padT+groups.length*rowH+padB,pw=W-padL-padR;
   const info=groups.map(g=>{const st=FD.stat.summary(g.values),iqr=st.q3-st.q1,lf=st.q1-1.5*iqr,uf=st.q3+1.5*iqr,s=g.values.slice().sort((a,b)=>a-b);
     return{g,st,lw:s.find(v=>v>=lf),uw:s.slice().reverse().find(v=>v<=uf),out:s.filter(v=>v<lf||v>uf)}});
   const maxV=o.max!=null?o.max:Math.max(...info.map(i=>i.st.max));const {max,step}=o.max!=null?{max:o.max,step:o.step}:scaleMax(maxV,4);
   const X=v=>padL+pw*(v/max);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'บอกซ์พล็อต')}">`;
-  tickLabels(max,step).forEach(t=>{s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${padT}" y2="${H-padB}"/><text class="ax" x="${X(t)}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(t):trim(t))}</text>`});
-  s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/><text class="ax" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · แกนเริ่มที่ 0</text>`;
+  tickLabels(max,step).forEach(t=>{s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-xt="1" x="${X(t)}" y="${H-padB+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.axFmt?o.axFmt(t):trim(t))}</text>`});
+  s+=`<line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}"/><text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · แกนเริ่มที่ 0</text>`;
   info.forEach((it,i)=>{const cy=padT+i*rowH+rowH/2,st=it.st,bh=fz(22),col=o.color||'#2F6DB5';
     const tp=`<b>${esc(it.g.label)}</b>`+[['จำนวน',st.n+' รายการ'],['ต่ำสุด',o.fmt(st.min)],['ขอบล่างของกล่อง',o.fmt(st.q1)],['ค่ากลาง',o.fmt(st.med)],['เฉลี่ย',o.fmt(st.mean)],['Q3',o.fmt(st.q3)],['เกณฑ์สูง (P95)',o.fmt(st.p95)],['สูงสุด',o.fmt(st.max)]].map(r=>FD.tipRow(r[0],r[1])).join('');
     s+=`<g tabindex="0" role="img" data-tip="${esc(tp)}" aria-label="${esc(it.g.label+': ค่ากลาง '+o.fmt(st.med)+', ขอบล่าง '+o.fmt(st.q1)+', ขอบบน '+o.fmt(st.q3)+', '+st.n+' โครงการ')}"><rect x="${padL}" y="${cy-rowH/2}" width="${W-padL}" height="${rowH}" fill="transparent"/>`;
@@ -977,11 +992,11 @@ FD.scatter=function(c,pts,o){o=o||{};pts=pts.filter(p=>p.x!=null&&p.y!=null&&isF
   const sx=scaleMax(Math.max(...pts.map(p=>p.x)),5),sy=scaleMax(Math.max(...pts.map(p=>p.y)),4);
   const X=v=>padL+pw*v/sx.max,Y=v=>padT+ph*(1-v/sy.max),reg=FD.stat.linreg(pts.map(p=>p.x),pts.map(p=>p.y));
   let s=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${esc(o.aria||'กราฟกระจาย')}">`;
-  tickLabels(sy.max,sy.step).forEach(t=>{s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${padL-8}" y="${Y(t)+fz(4.5)}" font-size="${fz(13)}" text-anchor="end">${esc(o.yFmt?o.yFmt(t):trim(t))}</text>`});
-  tickLabels(sx.max,sx.step).forEach(t=>{s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${padT}" y2="${padT+ph}"/><text class="ax" x="${X(t)}" y="${padT+ph+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xFmt?o.xFmt(t):trim(t))}</text>`});
+  tickLabels(sy.max,sy.step).forEach(t=>{s+=`<line class="gl" x1="${padL}" x2="${W-padR}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${padL-8}" y="${Y(t)+(t===0?fz(1):fz(4.5))}" font-size="${fz(13)}" text-anchor="end">${esc(o.yFmt?o.yFmt(t):trim(t))}</text>`});
+  tickLabels(sx.max,sx.step).forEach(t=>{s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${padT}" y2="${padT+ph}"/><text class="ax" data-xt="1" x="${X(t)}" y="${padT+ph+fz(18)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xFmt?o.xFmt(t):trim(t))}</text>`});
   s+=`<line class="axl" x1="${padL}" x2="${W-padR}" y1="${Y(0)}" y2="${Y(0)}"/><line class="axl" x1="${padL}" x2="${padL}" y1="${padT}" y2="${Y(0)}"/>`;
-  s+=`<text class="ax" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · แกนเริ่มที่ 0</text>`;
-  s+=`<text class="ax" transform="translate(${fz(14)},${padT+ph/2}) rotate(-90)" font-size="${fz(13)}" text-anchor="middle">${esc(o.yTitle||'')} · เริ่มที่ 0</text>`;
+  s+=`<text class="ax" data-title="1" x="${padL+pw/2}" y="${H-fz(6)}" font-size="${fz(13)}" text-anchor="middle">${esc(o.xTitle||'')} · แกนเริ่มที่ 0</text>`;
+  s+=`<text class="ax" data-title="1" transform="translate(${fz(20)},${padT+ph/2}) rotate(-90)" font-size="${fz(13)}" text-anchor="middle">${esc(o.yTitle||'')} · เริ่มที่ 0</text>`;
   const step=Math.ceil(pts.length/3000);
   pts.forEach((p,i)=>{if(i%step)return;const tp=`<b>${esc(p.label||'')}</b>`+FD.tipRow(o.xName,o.xFmtT(p.x))+FD.tipRow(o.yName,o.yFmtT(p.y));
     s+=`<circle tabindex="0" role="img" aria-label="${esc((p.label||'')+': '+o.xName+' '+o.xFmtT(p.x)+', '+o.yName+' '+o.yFmtT(p.y))}" data-tip="${esc(tp)}" cx="${X(p.x)}" cy="${Y(p.y)}" r="5" fill="#2F6DB5" fill-opacity=".45" stroke="#2F6DB5" stroke-width="1.2"/>`});
@@ -1015,7 +1030,7 @@ FD.spark=function(vals,color){vals=vals.filter(v=>v!=null);if(vals.length<3)retu
 /* ---------- heatmap (ตาราง 2 มิติ ระบายสีตามค่า 0–100%) ---------- */
 FD.heat=function(c,o){o=o||{};const rows=o.rows||[],cols=o.cols||[];
   if(!rows.length||!cols.length||rows.every(r=>r.cells.every(x=>!x.n)))return NODATA(c);
-  const W=W_(c,o),labW=fz(122),gapX=fz(10),padT=fz(58),cellH=fz(50),minC=fz(66),nC=cols.length;
+  const W=W_(c,o),labW=fz(122),gapX=fz(10),padT=fz(58),cellH=fz(50),minC=Math.max(fz(66),Math.ceil(tw('000 โครงการ',fz(12)))+fz(10)),nC=cols.length;
   const need=labW+nC*minC+gapX,Wv=Math.max(W,need),cw=(Wv-labW-gapX)/nC,H=padT+rows.length*cellH+fz(8);
   const CLS=[[227,236,248],[180,204,234],[127,163,214],[47,99,174],[20,64,127]],ink='#0F1F44';
   const cls=v=>CLS[Math.max(0,Math.min(4,Math.floor((v||0)/20)))],lite=(a,w)=>a.map(v=>Math.round(v+(255-v)*w));
@@ -1036,7 +1051,34 @@ FD.heat=function(c,o){o=o||{};const rows=o.rows||[],cols=o.cols||[];
 };
 FD.heatLegend=function(minN){const C=['#E3ECF8','#B4CCEA','#7FA3D6','#2F63AE','#14407F'],L=['0–19%','20–39%','40–59%','60–79%','80–100%'];
   return`<div class="heatlg"><span>ร้อยละชำระคืน:</span>${C.map((c,i)=>`<span class="lk"><i class="sw" style="background:${c}" aria-hidden="true"></i>${L[i]}</span>`).join('')}<span class="lowkey"><i class="sw lowsw" aria-hidden="true"></i>กรอบประ = มีน้อยกว่า ${minN||5} โครงการ ใช้ดูประกอบ ไม่ควรสรุป</span></div>`};
-['stack','line','hist','box','scatter','donut','hbar','heat'].forEach(n=>{const f=FD[n];if(typeof f==='function')FD[n]=function(c){if(!c)return;return f.apply(this,arguments)}});
+
+/* ---------- จัดป้ายแกนหลังวาด: ตัดบรรทัดหัวแกน / ไม่ให้ล้นขอบ / ลดจำนวนป้ายที่ชิดกันเกินไป ---------- */
+FD.tidy=function(c){try{
+  const svg=c.querySelector('svg');if(!svg)return;const vb=svg.viewBox&&svg.viewBox.baseVal;if(!vb||!vb.width)return;
+  const first=svg.querySelector('text');if(!first)return;const f0=first.getBBox();if(!f0.width&&!f0.height)return;
+  const NS='http://www.w3.org/2000/svg';let extra=0;
+  svg.querySelectorAll('text[data-title]').forEach(t=>{
+    const size=+t.getAttribute('font-size')||13,txt=t.textContent;
+    if(t.getAttribute('transform')){const m=/translate\(([-\d.]+)[ ,]+([-\d.]+)\)/.exec(t.getAttribute('transform')),cyT=m?+m[2]:vb.height/2,L=2*Math.min(cyT,vb.height-cyT)-10;let b=t.getBBox();if(b.width>L){const k=Math.max(.8,L/b.width);t.setAttribute('font-size',(size*k).toFixed(1));b=t.getBBox();if(b.width>L){t.setAttribute('textLength',L.toFixed(1));t.setAttribute('lengthAdjust','spacingAndGlyphs')}}return}
+    const anchor=t.getAttribute('text-anchor')||'start',x0=+t.getAttribute('x'),y0=+t.getAttribute('y');
+    const maxW=vb.width-(anchor==='start'?x0:0)-8;if(t.getBBox().width<=maxW&&(anchor==='start'||(x0-t.getBBox().width/2>=2&&x0+t.getBBox().width/2<=vb.width-2)))return;
+    const ws=words(txt),lines=[];let cur='';
+    ws.forEach(w=>{if(cur&&tw(cur+w,size)>maxW){lines.push(cur.trim());cur=w.trimStart()}else cur+=w});if(cur.trim())lines.push(cur.trim());
+    const X=anchor==='start'?x0:vb.width/2,lh=size*1.3;
+    t.setAttribute('x',X);t.textContent='';
+    lines.forEach((ln,i)=>{const ts=document.createElementNS(NS,'tspan');ts.setAttribute('x',X);if(i)ts.setAttribute('dy',lh.toFixed(1));ts.textContent=ln;t.appendChild(ts)});
+    extra=Math.max(extra,(lines.length-1)*lh)});
+  if(extra>0)svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.width} ${(vb.height+extra).toFixed(1)}`);
+  const VW=vb.width;
+  svg.querySelectorAll('text[data-xt]').forEach(t=>{const b=t.getBBox();
+    if(b.x+b.width>VW-1){t.setAttribute('text-anchor','end');t.setAttribute('x',VW-2)}
+    else if(b.x<1){t.setAttribute('text-anchor','start');t.setAttribute('x',2)}});
+  const xt=[...svg.querySelectorAll('text[data-xt]')];
+  if(xt.length>1){const bb=xt.map(t=>t.getBBox()),ok=k=>{let last=-1e9;for(let i=0;i<xt.length;i+=k){if(bb[i].x<last+8)return false;last=bb[i].x+bb[i].width}return true};
+    let k=1;while(k<xt.length&&!ok(k))k++;
+    if(k>1)xt.forEach((t,i)=>{if(i%k)t.setAttribute('display','none')})}
+}catch(e){}};
+['stack','line','hist','box','scatter','donut','hbar','heat'].forEach(n=>{const f=FD[n];if(typeof f==='function')FD[n]=function(c){if(!c)return;const r=f.apply(this,arguments);if(n!=='donut'&&n!=='heat')FD.tidy(c);return r}});
 })();
 
 </script>
@@ -1051,7 +1093,7 @@ const q=[];const queue=f=>q.push(f);
 const NAV=[['overview','ภาพรวมกองทุน','grid'],['data','ข้อมูลเงินทุนหมุนเวียน','wallet'],['projects','โครงการและสมาชิก','users'],['repay','การชำระคืนเงินกู้','trend'],['districts','ข้อมูลรายอำเภอ','pin'],['reports','รายงานและเอกสาร','file'],['about','ที่มาของตัวเลข','info'],['help','คู่มือการใช้งาน','help']];
 const LABEL=Object.fromEntries(NAV.filter(n=>n!=='-').map(n=>[n[0],n[1]]));
 const TITLES={
- overview:['แดชบอร์ด / ภาพรวม','เงินทุนหมุนเวียน เพื่อพลังสตรีกระบี่','ติดตามเงินกู้ การชำระคืน และโอกาสที่เติบโตไปพร้อมชุมชน'],
+ overview:['แดชบอร์ด / ภาพรวม','กองทุนพัฒนาบทบาทสตรี','ติดตามเงินกู้ การชำระคืน และโอกาสที่เติบโตไปพร้อมชุมชน'],
  data:['ข้อมูล / ตารางโครงการ','ข้อมูลเงินทุนหมุนเวียน','ตารางรายโครงการ ค้นหา เรียงลำดับ คัดลอก และส่งออกได้ ตัวเลขทุกค่ามาจากข้อมูลที่นำเข้าโดยตรง'],
  projects:['วิเคราะห์ / โครงการและสมาชิก','โครงการและสมาชิก','ดูว่าเงินกู้กระจายไปยังกิจกรรมใด วงเงินต่อโครงการเป็นอย่างไร และสัมพันธ์กับจำนวนสมาชิกหรือไม่'],
  repay:['วิเคราะห์ / การชำระคืน','การชำระคืนเงินกู้','ติดตามความคืบหน้าการชำระคืน เงินกู้ที่ค้างอยู่ค้างชำระ และโครงการที่ควรติดตาม'],
@@ -1224,7 +1266,12 @@ function distTable(){
   const body=list.map(x=>{const a=x.a,has=a.n>0,low=has&&a.onTime!=null&&all.onTime!=null&&a.onTime<all.onTime;
     return`<tr class="click" data-d="${esc(x.d)}"><td class="name"><a class="rowlnk" href="#/district/${encodeURIComponent(x.d)}">${esc(x.d)}</a></td><td class="n">${has?FD.f0(a.n):'–'}</td><td class="n">${has?mb(a.disb):'–'}</td><td class="n">${has?mb(a.repaid):'–'}</td><td class="n">${has?mb(a.outst):'–'}</td><td>${a.onTime==null?'<span class="bar"><span>–</span></span>':`<div class="bar"><i><u class="${low?'low':''}" style="width:${Math.max(0,Math.min(100,a.onTime))}%"></u></i><span>${FD.pct(a.onTime)}</span></div>`}</td><td aria-hidden="true">${ICON('chev')}</td></tr>`}).join('');
   const foot=`<tr><td>รวมทุกอำเภอ</td><td class="n">${FD.f0(all.n)}</td><td class="n">${mb(all.disb)}</td><td class="n">${mb(all.repaid)}</td><td class="n">${mb(all.outst)}</td><td class="n">${FD.pct(all.onTime)}</td><td></td></tr>`;
-  return`<div class="tscroll"><table class="t"><caption class="sr">ผลการดำเนินงานรายอำเภอ หน่วย: ล้านบาท</caption><thead><tr>${thS('d','d','อำเภอ','',s)}${thS('d','n','โครงการ','n',s)}${thS('d','disb','อนุมัติสะสม','n',s)}${thS('d','repaid','ชำระคืนสะสม','n',s)}${thS('d','outst','ยอดที่ยังไม่ได้คืน','n',s)}${thS('d','ontime','ชำระตามกำหนด','',s)}<th></th></tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div><p class="stats barlg"><span class="lgi"><i class="sw" style="background:#C98A12"></i>ต่ำกว่าภาพรวมทุกอำเภอ (${FD.pct(all.onTime)})</span><span class="lgi"><i class="sw" style="background:#6B49B5"></i>เท่ากับหรือสูงกว่าภาพรวม</span></p><p class="stats refstats">หน่วยเงิน: ล้านบาท · “ชำระตามกำหนด” = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน · แท่งสีเหลือง = ต่ำกว่าค่าของทุกอำเภอรวม (${FD.pct(all.onTime)})</p>`;
+  const okd=ds.filter(x=>x.a.n>0&&x.a.onTime!=null);let ex='';
+  if(okd.length>=2){const hi=okd.reduce((a,b)=>b.a.onTime>a.a.onTime?b:a),lo=okd.reduce((a,b)=>b.a.onTime<a.a.onTime?b:a),mo=okd.reduce((a,b)=>b.a.outst>a.a.outst?b:a);
+    ex=wsn(`ชำระตามกำหนดสูงสุดคืออำเภอ${esc(hi.d)} ${FD.pct(hi.a.onTime)} ต่ำสุดคืออำเภอ${esc(lo.d)} ${FD.pct(lo.a.onTime)} ภาพรวม ${FD.pct(all.onTime)} ยอดที่ยังไม่ได้คืนมากสุดที่อำเภอ${esc(mo.d)} ${mb(mo.a.outst)} ล้านบาท`,
+      `แท่งสีเหลืองคืออำเภอที่ชำระตามกำหนดต่ำกว่าภาพรวม ควรดูควบคู่ยอดที่ยังไม่ได้คืน เพราะอำเภอที่ร้อยละสูงแต่ยอดค้างมากก็ยังมีเงินติดอยู่มาก`,
+      `เริ่มติดตามอำเภอ${esc(lo.d)} และ${esc(mo.d)} ก่อน โดยกดชื่ออำเภอเพื่อดูตำบลและโครงการที่ค้าง`,FD.h.scopeText(true))}
+  return`<div class="tscroll"><table class="t"><caption class="sr">ผลการดำเนินงานรายอำเภอ หน่วย: ล้านบาท</caption><thead><tr>${thS('d','d','อำเภอ','',s)}${thS('d','n','โครงการ','n',s)}${thS('d','disb','อนุมัติสะสม','n',s)}${thS('d','repaid','ชำระคืนสะสม','n',s)}${thS('d','outst','ยอดที่ยังไม่ได้คืน','n',s)}${thS('d','ontime','ชำระตามกำหนด','',s)}<th></th></tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div><p class="stats barlg"><span class="lgi"><i class="sw" style="background:#C98A12"></i>ต่ำกว่าภาพรวมทุกอำเภอ (${FD.pct(all.onTime)})</span><span class="lgi"><i class="sw" style="background:#6B49B5"></i>เท่ากับหรือสูงกว่าภาพรวม</span></p><p class="stats refstats">หน่วยเงิน: ล้านบาท · “ชำระตามกำหนด” = (ยอดที่ยังไม่ได้คืน − ยอดค้างชำระ) ÷ ยอดที่ยังไม่ได้คืน · แท่งสีเหลือง = ต่ำกว่าค่าของทุกอำเภอรวม (${FD.pct(all.onTime)})</p>${ex}`;
 }
 
 /* ---- district compare WSN ---- */
@@ -1299,9 +1346,30 @@ V.overview=function(){
     `ดูรายชื่อโครงการที่ควรติดตามที่หน้า ${link('repay','การชำระคืนเงินกู้')}`,FD.h.scopeText()):'';
   const donutCard=card('dn','การชำระคืนของเงินกู้ที่ค้างอยู่','สัดส่วน',`สัดส่วนจากยอดที่ยังไม่ได้คืน ${mb(A.outst)} ล้านบาท`,'',A.outst>0?`<div class="donutwrap"><div class="chart" id="c-donut" style="width:auto"></div><div class="donutlist">${FD.BUCKETS.map(b=>`<div><i style="background:${b.color}${b.key==='b2'?';background:repeating-linear-gradient(45deg,'+b.color+','+b.color+' 2px,#fff 2px,#fff 4px)':''}"></i><span>${esc(b.label)}</span><b>${FD.pct(pc(b.key),0)}</b><small>${mb(A.b[b.key])} ล้านบาท · ${A.nb[b.key]} โครงการ</small></div>`).join('')}</div></div>${dw}`:`<div class="nodata"><div><b>ไม่มียอดที่ยังไม่ได้คืน</b></div></div>`);
   const dt=byDistrict(ST.selND).filter(x=>x.rows.length);
-  const distCard=card('dt','ผลการดำเนินงานรายอำเภอ','เปรียบเทียบ',`<span class="badge" style="background:var(--blue-soft);color:var(--blue)">${dt.length} อำเภอ</span> หน่วย: ล้านบาท ${ST.f.district?'· แสดงทุกอำเภอ (ไม่ตัดตามตัวกรองอำเภอ)':''}`,`<a class="btn" href="#/districts">${ICON('file')} ดูรายงานรายอำเภอ</a>`,distTable());
+  const distCard=card('dt','ประสิทธิภาพการดำเนินงานรายอำเภอ','เปรียบเทียบ',`<span class="badge" style="background:var(--blue-soft);color:var(--blue)">${dt.length} อำเภอ</span> หน่วย: ล้านบาท ${ST.f.district?'· แสดงทุกอำเภอ (ไม่ตัดตามตัวกรองอำเภอ)':''}`,`<a class="btn" href="#/districts">${ICON('file')} ดูรายงานรายอำเภอ</a>`,distTable());
   return hero()+kpis()+insHtml+`<div class="grid2">${trendCard}${donutCard}</div>`+distCard;
 };
+
+/* ---- สถิติเชิงพรรณารายอำเภอ (วงเงินอนุมัติต่อโครงการ) ---- */
+function distStatRows(list){
+  const mk=(label,rows)=>{const v=rows.map(r=>r.disb).filter(x=>x!=null&&isFinite(x)),m=rows.map(r=>r.members).filter(x=>x!=null&&isFinite(x)),p=rows.map(r=>r.rate).filter(x=>x!=null&&isFinite(x));
+    return{label,n:rows.length,s:v.length?FD.stat.summary(v):null,sum:FD.stat.sum(v),mem:FD.stat.mean(m),rate:FD.stat.mean(p)}};
+  return[...list.map(x=>mk(x.d,x.rows)),mk('ทุกอำเภอ',list.flatMap(x=>x.rows))]}
+const sf0=v=>v==null||!isFinite(v)?'–':FD.f0(Math.round(v));
+function distStatsCard(){
+  const ds=byDistrict(ST.selND).filter(x=>x.rows.length),R=distStatRows(ds),all=R[R.length-1],body=R.slice(0,-1);
+  const row=(x,tf)=>`<tr${tf?' class="tot"':''}><td class="name">${esc(x.label)}</td><td class="n">${FD.f0(x.n)}</td><td class="n">${sf0(x.s&&x.s.mean)}</td><td class="n">${sf0(x.s&&x.s.med)}</td><td class="n">${sf0(x.s&&x.s.std)}</td><td class="n">${sf0(x.s&&x.s.min)}</td><td class="n">${sf0(x.s&&x.s.max)}</td><td class="n">${x.mem==null?'–':FD.f1(x.mem)}</td><td class="n">${x.rate==null?'–':FD.pct(x.rate)}</td></tr>`;
+  const th=(t,u)=>`<th class="n">${t}${u?`<span class="u">${u}</span>`:''}</th>`;
+  const tbl=`<div class="tscroll" tabindex="0" role="region" aria-label="สถิติเชิงพรรณารายอำเภอ (เลื่อนซ้ายขวาได้)"><table class="t"><caption class="sr">สถิติเชิงพรรณาของวงเงินอนุมัติต่อโครงการ แยกรายอำเภอ หน่วย: บาท</caption><thead><tr><th>อำเภอ</th>${th('โครงการ','แห่ง')}${th('วงเงินเฉลี่ย','บาท')}${th('ค่ากลาง','บาท')}${th('ส่วนเบี่ยงเบนมาตรฐาน','บาท')}${th('ต่ำสุด','บาท')}${th('สูงสุด','บาท')}${th('สมาชิกเฉลี่ย','คน/โครงการ')}${th('ชำระคืนเฉลี่ย','% ต่อโครงการ')}</tr></thead><tbody>${body.map(x=>row(x)).join('')}</tbody><tfoot>${row(all,1)}</tfoot></table></div>`;
+  const ok=body.filter(x=>x.s&&x.n>=2);let ex;
+  if(ok.length>=2&&all.s){const hi=ok.reduce((a,b)=>b.s.mean>a.s.mean?b:a),lo=ok.reduce((a,b)=>b.s.mean<a.s.mean?b:a),sd=ok.reduce((a,b)=>(b.s.std||0)>(a.s.std||0)?b:a),g=all.s;
+    const skew=g.mean<g.med*.95?'ค่าเฉลี่ยต่ำกว่าค่ากลาง แปลว่ามีโครงการวงเงินน้อยบางส่วนดึงค่าเฉลี่ยลง':g.mean>g.med*1.05?'ค่าเฉลี่ยสูงกว่าค่ากลาง แปลว่ามีโครงการวงเงินสูงบางส่วนดึงค่าเฉลี่ยขึ้น':'ค่าเฉลี่ยใกล้เคียงค่ากลาง แปลว่าวงเงินต่อโครงการค่อนข้างสม่ำเสมอ';
+    ex=wsn(`วงเงินเฉลี่ยต่อโครงการสูงสุดคืออำเภอ${esc(hi.label)} ${sf0(hi.s.mean)} บาท ต่ำสุดคืออำเภอ${esc(lo.label)} ${sf0(lo.s.mean)} บาท ส่วนเบี่ยงเบนมาตรฐานสูงสุดที่อำเภอ${esc(sd.label)} (${sf0(sd.s.std)} บาท)`,
+      `ทั้งจังหวัดเฉลี่ย ${sf0(g.mean)} บาท ค่ากลาง ${sf0(g.med)} บาท ${skew}`,
+      `เทียบอำเภอด้วยค่ากลางควบคู่ค่าเฉลี่ย แล้วเปิดอำเภอ${esc(sd.label)}เพื่อดูว่าวงเงินต่างกันมากเพราะกิจกรรมใด`,FD.h.scopeText(true))}
+  else ex=wsn('มีอำเภอที่มีอย่างน้อย 2 โครงการน้อยกว่า 2 อำเภอ จึงเปรียบเทียบสถิติยังไม่ได้','–','ล้างตัวกรองเพื่อดูภาพรวมทั้งจังหวัด',FD.h.scopeText(true));
+  return card('dstat','สถิติเชิงพรรณารายอำเภอ','ตาราง','วงเงินอนุมัติต่อโครงการ · เปรียบเทียบทุกอำเภอ · ส่วนเบี่ยงเบนมาตรฐานคำนวณแบบตัวอย่าง (n−1)','',tbl+ex)}
+FD.h.distStatRows=distStatRows;
 
 V.districts=function(){
   if(!ST.rows.length||!ST.selND.length)return nodataCard(ST.rows.length?'ไม่พบโครงการตามตัวกรอง':undefined);
@@ -1336,7 +1404,7 @@ V.districts=function(){
   +card('dc','เปรียบเทียบรายอำเภอ','เปรียบเทียบ','เลือกตัวชี้วัดแล้วดูว่าอำเภอใดสูงหรือต่ำ',distMetricSeg(),distCompare('c-dc'))+hmCard
   +`<div class="grid2e">`+card('ds','สถานะเงินกู้ที่ยังไม่ได้คืนรายอำเภอ','สัดส่วน','แบ่งยอดที่ยังไม่ได้คืนตามสถานะการชำระ',stackSeg(),bucketStack('c-ds',groups,'รายอำเภอ'))
   +card('db','การกระจายร้อยละชำระคืนรายอำเภอ','กระจาย','แต่ละโครงการชำระคืนไปกี่ % ของวงเงินอนุมัติ','',`${FD.boxLegend()}<div class="chart" id="c-dbox" data-click="district"></div>${bw}`+altTable('สถิติร้อยละชำระคืนรายอำเภอ',['อำเภอ','จำนวนโครงการ','เฉลี่ย','ค่ากลาง','เกณฑ์สูง (P95)'],bs.map(s=>[s.label,s.n,FD.pct(s.mean),FD.pct(s.med),FD.pct(s.p95)])))+`</div>`
-  +card('dtab','ตารางสรุปรายอำเภอ','ตาราง','ใช้อ่านตัวเลขละเอียดและเรียงลำดับ','',distTable());
+  +card('dtab','ประสิทธิภาพการดำเนินงานรายอำเภอ','ตาราง','ผลงานของแต่ละอำเภอ (ใช้อำเภอแทนหน่วยงานที่ดูแลกลุ่ม) · หน่วยเงิน: ล้านบาท · กดหัวตารางเพื่อเรียงลำดับ','',distTable())+distStatsCard();
 };
 FD.h.distTable=distTable;FD.h.card=card;FD.h.kpi=kpi;FD.h.nodataCard=nodataCard;FD.h.bucketStack=bucketStack;FD.h.stackSeg=stackSeg;FD.h.hasData=hasData;FD.h.link=link;FD.h.cmp=cmp;FD.h.tr=tr;FD.h.mb=mb;
 })();
@@ -1567,7 +1635,7 @@ async function build(){
     ls.slice(0,3).forEach((l,j)=>{if(j===0){font(x,9,600);const tt=strip(i.title)+' ';x.fillText(tt,38,y);const off=x.measureText(tt).width;font(x,9,400);x.fillText(l.slice((strip(i.title)+':').length).replace(/^\s+/,''),38+off,y)}else x.fillText(l,38,y);y+=12.5});y+=4});
   y+=6;
   // district table
-  y=h2(x,'ผลการดำเนินงานรายอำเภอ (หน่วย: ล้านบาท)',y);
+  y=h2(x,'ประสิทธิภาพการดำเนินงานรายอำเภอ (หน่วย: ล้านบาท)',y);
   const ds=byDistrict(ST.sel).filter(d=>d.rows.length).sort((a,b)=>b.a.disb-a.a.disb);
   const cols=[['อำเภอ',28,'l'],['โครงการ',150,'r'],['อนุมัติสะสม',222,'r'],['ชำระคืนสะสม',292,'r'],['ยังไม่ได้คืน',362,'r'],['ชำระตามกำหนด',432,'l']];
   x.fillStyle=SOFT;x.fillRect(28,y-11,W-56,17);x.fillStyle=NAVY;font(x,8.5,600);
@@ -1655,7 +1723,7 @@ const pdfBtn=(v,l)=>`<button class="btn" type="button" data-act="pdf" data-v="${
 V.reports=function(){
   if(!ST.rows.length)return nodataCard();
   const n=ST.sel.length,np=ST.selPay.length;
-  const sets=[['projects','รายโครงการ ('+FD.f0(n)+' แถว)'],['districts','สรุปรายอำเภอ'],...(ST.pay.length?[['payments','รายการชำระคืน ('+FD.f0(np)+' แถว)']]:[])];
+  const sets=[['projects','รายโครงการ ('+FD.f0(n)+' แถว)'],['districts','สรุปรายอำเภอ'],['dstats','สถิติเชิงพรรณารายอำเภอ'],...(ST.pay.length?[['payments','รายการชำระคืน ('+FD.f0(np)+' แถว)']]:[])];
   return card('rx','ส่งออกข้อมูลตามตัวกรองปัจจุบัน','','ตัวกรองและคำค้นหาที่ตั้งไว้จะมีผลกับไฟล์ที่ส่งออกทุกประเภท','',`
    <dl class="dl"><dt>ขอบเขตข้อมูล</dt><dd>${esc(H.scopeText())}</dd>${np?`<dt>รายการชำระคืนที่เกี่ยวข้อง</dt><dd>${FD.f0(np)} รายการ</dd>`:''}<dt>แหล่งข้อมูล</dt><dd>${esc(ST.meta.source||'ไม่ระบุ')} · วันที่ข้อมูล: ${esc(ST.meta.asOf||'ไม่ระบุ')}</dd></dl>
    ${ST.source==='test'?'<p class="banner test" role="note"><b>ข้อมูลทดสอบ</b> ไฟล์ที่ส่งออกจะมีคำว่า TEST ในชื่อไฟล์และหมายเหตุในเอกสาร</p>':''}
@@ -1731,6 +1799,7 @@ V.about=function(){
    `<li><b>ใช้เฉพาะเงินต้น</b> ไม่รวมดอกเบี้ยและค่าปรับ</li>`,
    `<li><b>ไม่ใช้คอลัมน์ “ยอดคงเหลือดิบ” ของไฟล์ต้นทาง</b> เพราะแต่ละอำเภอใช้นิยามและวันอ้างอิงไม่เหมือนกัน (ไฟล์เองระบุว่าห้ามรวมข้ามนิยาม) แดชบอร์ดจึงคิดจาก “อนุมัติ − เงินต้นที่ชำระ” ด้วยวิธีเดียวกันทุกอำเภอ ผลรวมจึงไม่เท่ากับผลรวมของคอลัมน์ดิบ</li>`,
    `<li><b>ไม่มีวงเงินกองทุนรวมในไฟล์</b> จึงไม่แสดงตัวเลข “คงเหลือพร้อมสนับสนุน”</li>`,
+   `<li><b>“ประสิทธิภาพของหน่วยงาน” วัดที่ระดับอำเภอ</b> เพราะไฟล์ไม่มีคอลัมน์หน่วยงานผู้รับผิดชอบ จึงใช้อำเภอแทนสำนักงานที่ดูแลกลุ่ม และวัดจากร้อยละชำระคืน ร้อยละชำระตามกำหนด และยอดค้างชำระ ไม่ใช่คะแนนประเมินการทำงานของเจ้าหน้าที่</li>`,
    `<li><b>กลุ่มที่มีโครงการน้อย</b> (ต่ำกว่า 5 โครงการ) ค่ากลางและค่าเฉลี่ยอาจแกว่งมาก ควรดูจำนวนโครงการประกอบ</li>`].join('');
   const t4=card('ab4','ข้อควรระวังเวลาอ่านตัวเลข','','','',`<ul class="prose notes">${li}</ul><p class="csub" style="margin-top:.8rem">โครงสร้างไฟล์และผลตรวจคุณภาพข้อมูลอยู่ที่หน้า <a class="lnk" href="#/help">คู่มือการใช้งาน</a></p>`);
   return t1+t2+ex+t4;
@@ -1811,22 +1880,25 @@ const PH=['เลขที่โครงการ','ปีงบประมา
 const prow=r=>[r.pid,r.fy||'',r.date?dmy(r.date):'',r.district,r.sub,r.group,r.act,r.members==null?'':r.members,r.approved,r.repaid,r.outst,r.ov,r.odays,r.rate==null?'':+r.rate.toFixed(2),FD.BK[r.bucket].label];
 const DH=['อำเภอ','จำนวนโครงการ','สมาชิก (คน)','วงเงินอนุมัติสะสม (บาท)','ชำระคืนสะสม (บาท)','ยอดที่ยังไม่ได้คืน (บาท)','ยอดค้างชำระ (บาท)','ร้อยละชำระคืน','ร้อยละชำระตามกำหนด'];
 const drow=x=>[x.d,x.a.n,x.a.members,x.a.disb,x.a.repaid,x.a.outst,x.a.ov,x.a.repayRate==null?'':+x.a.repayRate.toFixed(2),x.a.onTime==null?'':+x.a.onTime.toFixed(2)];
+const SH=['อำเภอ','จำนวนโครงการ','วงเงินอนุมัติรวม (บาท)','วงเงินเฉลี่ยต่อโครงการ (บาท)','ค่ากลาง (บาท)','ส่วนเบี่ยงเบนมาตรฐาน (บาท)','ต่ำสุด (บาท)','Q1 (บาท)','Q3 (บาท)','สูงสุด (บาท)','สมาชิกเฉลี่ยต่อโครงการ (คน)','ร้อยละชำระคืนเฉลี่ยต่อโครงการ'];
+const srow=x=>{const g=x.s||{},r2=v=>v==null||!isFinite(v)?'':+(+v).toFixed(2);return[x.label,x.n,x.sum,r2(g.mean),r2(g.med),r2(g.std),r2(g.min),r2(g.q1),r2(g.q3),r2(g.max),x.mem==null?'':+x.mem.toFixed(2),x.rate==null?'':+x.rate.toFixed(2)]};
 const QH=['เลขที่โครงการ','วันที่ชำระคืน','จำนวนเงิน (บาท)','อำเภอ','ชื่อกลุ่ม/โครงการ'];
 function exportData(kind){
   if(!ST.sel.length){toast('ไม่มีข้อมูลให้ส่งออก ลองล้างตัวกรองหรือนำเข้าข้อมูลก่อน');return}
   const byId=new Map(ST.rows.map(r=>[r.pid,r])),dist=byDistrict(ST.sel).filter(x=>x.rows.length),A=ST.agg;
-  const prows=ST.sel.map(prow),drows=dist.map(drow),qrows=ST.selPay.map(p=>{const r=byId.get(p.pid);return[p.pid,dmy(p.date),p.amount,r?r.district:'',r?r.group:'']});
+  const prows=ST.sel.map(prow),drows=dist.map(drow),srows=H.distStatRows(dist).map(srow),qrows=ST.selPay.map(p=>{const r=byId.get(p.pid);return[p.pid,dmy(p.date),p.amount,r?r.district:'',r?r.group:'']});
   try{
     if(kind==='csv'){
-      const set=ST.ui.csvSet==='payments'&&ST.pay.length?'payments':ST.ui.csvSet==='districts'?'districts':'projects';
-      const [h,r]=set==='projects'?[PH,prows]:set==='districts'?[DH,drows]:[QH,qrows];
+      const set=ST.ui.csvSet==='payments'&&ST.pay.length?'payments':(ST.ui.csvSet==='districts'||ST.ui.csvSet==='dstats')?ST.ui.csvSet:'projects';
+      const [h,r]=set==='projects'?[PH,prows]:set==='districts'?[DH,drows]:set==='dstats'?[SH,srows]:[QH,qrows];
       FD.download(new Blob([FD.csv(h,r)],{type:'text/csv;charset=utf-8'}),fname(set,'csv'));toast('ดาวน์โหลด CSV แล้ว ('+FD.f0(r.length)+' แถว)')}
     else{
       const sum=[['ชื่อรายงาน',(ST.meta.title||'เงินทุนหมุนเวียน กองทุนพัฒนาบทบาทสตรี จังหวัดกระบี่')],['หน่วยงาน',ST.meta.agency||''],['ส่งออกเมื่อ',new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})],['ขอบเขตตัวกรอง',H.scopeText()],['แหล่งข้อมูล',ST.meta.source||'ไม่ระบุ'],['วันที่ของข้อมูล',ST.meta.asOf||'ไม่ระบุ'],['หมายเหตุ',ST.source==='test'?'ข้อมูลทดสอบ ไม่ใช่ข้อมูลจริง':'-'],[''],
         ['จำนวนโครงการ',A.n],['จำนวนสมาชิก (คน)',A.members],['วงเงินอนุมัติสะสม (บาท)',A.disb],['ชำระคืนสะสม (บาท)',A.repaid],['ยอดที่ยังไม่ได้คืน (บาท)',A.outst],['ยอดค้างชำระ (บาท)',A.ov],['ค้างชำระเกิน 90 วัน (บาท)',A.b.b2],['ร้อยละชำระคืน',A.repayRate==null?'':+A.repayRate.toFixed(2)],['ร้อยละชำระตามกำหนด',A.onTime==null?'':+A.onTime.toFixed(2)]];
       const sheets=[{name:'สรุป',cols:[{h:'รายการ',w:30},{h:'ค่า',w:60}],rows:sum},
        {name:'โครงการ',cols:[{h:PH[0],w:16},{h:PH[1],w:12,t:'t'},{h:PH[2],w:16},{h:PH[3],w:14},{h:PH[4],w:16},{h:PH[5],w:30},{h:PH[6],w:20},{h:PH[7],w:12,t:'i'},{h:PH[8],w:16,t:'m'},{h:PH[9],w:16,t:'m'},{h:PH[10],w:16,t:'m'},{h:PH[11],w:16,t:'m'},{h:PH[12],w:12,t:'i'},{h:PH[13],w:12,t:'p'},{h:PH[14],w:20}],rows:prows},
-       {name:'สรุปรายอำเภอ',cols:[{h:DH[0],w:16},{h:DH[1],w:12,t:'i'},{h:DH[2],w:12,t:'i'},{h:DH[3],w:18,t:'m'},{h:DH[4],w:18,t:'m'},{h:DH[5],w:18,t:'m'},{h:DH[6],w:18,t:'m'},{h:DH[7],w:14,t:'p'},{h:DH[8],w:16,t:'p'}],rows:drows}];
+       {name:'สรุปรายอำเภอ',cols:[{h:DH[0],w:16},{h:DH[1],w:12,t:'i'},{h:DH[2],w:12,t:'i'},{h:DH[3],w:18,t:'m'},{h:DH[4],w:18,t:'m'},{h:DH[5],w:18,t:'m'},{h:DH[6],w:18,t:'m'},{h:DH[7],w:14,t:'p'},{h:DH[8],w:16,t:'p'}],rows:drows},
+       {name:'สถิติรายอำเภอ',cols:[{h:SH[0],w:16},{h:SH[1],w:12,t:'i'},{h:SH[2],w:18,t:'m'},{h:SH[3],w:18,t:'m'},{h:SH[4],w:16,t:'m'},{h:SH[5],w:18,t:'m'},{h:SH[6],w:14,t:'m'},{h:SH[7],w:14,t:'m'},{h:SH[8],w:14,t:'m'},{h:SH[9],w:14,t:'m'},{h:SH[10],w:16},{h:SH[11],w:16,t:'p'}],rows:srows}];
       if(ST.pay.length)sheets.push({name:'รายการชำระคืน',cols:[{h:QH[0],w:16},{h:QH[1],w:14},{h:QH[2],w:16,t:'m'},{h:QH[3],w:14},{h:QH[4],w:30}],rows:qrows});
       FD.download(FD.xlsx(sheets),fname('report','xlsx'));toast('ดาวน์โหลด Excel แล้ว')}
   }catch(e){console.error(e);toast('ส่งออกไม่สำเร็จ: '+e.message)}
